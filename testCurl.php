@@ -2,7 +2,10 @@
 <?php
 
 /*
+Use:	$decoded_data = extractInformation($my_URL);
+
 Takes the URL(json_encoded webpage from the Search API), decodes the information obtained from the webpage and returns the associative array containing all the information.
+If there is an HTTP error code that gets returned when requesting the URL, it will be returned as the return value.
 */
 function extractInformation($url){
 
@@ -19,7 +22,7 @@ function extractInformation($url){
 	
 	//SANITY CHECK
 	$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
-	if ($http_code >= 400){
+	if ($http_code != 200){
 		return $http_code;		//	If there is a HTTP Error, we terminate execution 
 	}
 
@@ -30,9 +33,12 @@ function extractInformation($url){
 }
 
 /*
+Use:	$array = getMetadata($decodedContent);
+
 This function takes a json_decoded associative array of information on a page. 
 Compiles the relevant metadata (url's) and outputs the list of URLs in the given section.
 The function returns an array. The first index of the array is an array of URLs that was compiled from the page and the second index holds the number of entries that were recorded.
+If there is no data that can be extracted from the given URL, the function will return -1.
 */
 function getMetadata($infoArray){
 
@@ -45,6 +51,7 @@ function getMetadata($infoArray){
 
 	$docArray = $infoArray['response']['docs'];
 	$numberOfEntries = count($docArray);
+	if ($numberOfEntries == 0) return -1;;
 	//print "\nNumber of docs:\t" . $numberOfEntries . "\n\n";
 
 	for ($i = 0; $i < $numberOfEntries; $i++){
@@ -58,6 +65,8 @@ function getMetadata($infoArray){
 }
 
 /*
+Use:	$array_of_urls = getAllData($my_URL);
+
 Takes a URL as a parameter and keeps incrementing the search offset to iterate through all entries.
 The purpose of the function is to print out a list of all the URLs pertaining to the search.
 It also returns the total number of entries that were found and outputted.
@@ -70,16 +79,17 @@ function getAllData($url){
 	$modifiedURL = $url;
 	
 	while(true){
-	
 		$decoded = extractInformation($modifiedURL);
 		if (is_int($decoded))	break;					//	This means the function has returned a HTTP ErrorCode
 		
 		print "\n\nExtracting URLs. Offset = " . $offset . "\n";
+		print "Modified-URL:\t" . $modifiedURL . ":\n";
 		$result = getMetadata($decoded);				//	extract the URLs
+		if (is_int($result))	break;					//	-1 return value indicates there are no articles 
 	
 		$offset += 10;									//	increment the offset to get the next 10 entries
 		$modifiedURL = $url . "&offset=" . $offset;		//	construct the new URL with the new offset
-		print "Modified-URL:\t" . $modifiedURL;
+		
 		
 		$numberOfArticles += $result[1];
 		$URLarray = array_merge($URLarray, $result[0]);	//	append the new URLs to our URL array
@@ -87,9 +97,16 @@ function getAllData($url){
 }
 
 
-//$url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=book%20review&sort=newest&type=article";
-$url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=tolkien&sort=newest&type=article";
+$url_array = array();
 
-getAllData($url);
+if (isset($argv[1])){
+	$url_array = getAllData($argv[1]);
+	print "Total Number of URLs:\t" . count($url_array) . "\n\n";		
+}
+else { 	
+	print "\nNo URL provided. Script Use: 'php testCurl.php [URL...]'\n";
+	print "\t-> Provide the URL in 'quotes'\n";
+	print "\t-> Don't include the 'offset' filter in the URL, the script takes care of it\n\n";
+}
 
 ?>
