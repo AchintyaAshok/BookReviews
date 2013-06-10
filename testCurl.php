@@ -102,6 +102,11 @@ function getAllData($url){
 
 $url_array = array();
 
+if (isset($argv[2]){
+$fileName = $argv[2];
+$fp = fopen("$fileName" , "w+");
+}
+else	$fp = NULL;
 if (isset($argv[1])){
 	if (!is_string($argv[1])){
 		print "\nProvide the URL in 'quotes'\n";
@@ -110,6 +115,7 @@ if (isset($argv[1])){
 	$url_array = getAllData($argv[1]);
 	print "Total Number of URLs:\t" . count($url_array) . "\n\n";		
 }
+
 else { 	
 	print "\nNo URL provided. Script Use: 'php testCurl.php [URL...]'\n";
 	print "\t-> Provide the URL in 'quotes'\n";
