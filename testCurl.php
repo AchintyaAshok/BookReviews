@@ -69,7 +69,7 @@ Use:	$array_of_urls = getAllData($my_URL);
 
 Takes a URL as a parameter and keeps incrementing the search offset to iterate through all entries.
 The purpose of the function is to print out a list of all the URLs pertaining to the search.
-It also returns the total number of entries that were found and outputted.
+It returns the array of URLs that were found and outputted.
 */
 function getAllData($url){
 	
@@ -84,6 +84,7 @@ function getAllData($url){
 		
 		print "\n\nExtracting URLs. Offset = " . $offset . "\n";
 		print "Modified-URL:\t" . $modifiedURL . ":\n";
+		//print "Cumulative # of URLs:\t" . count($URLarray) . "\n";
 		$result = getMetadata($decoded);				//	extract the URLs
 		if (is_int($result))	break;					//	-1 return value indicates there are no articles 
 	
@@ -94,12 +95,18 @@ function getAllData($url){
 		$numberOfArticles += $result[1];
 		$URLarray = array_merge($URLarray, $result[0]);	//	append the new URLs to our URL array
 	}
+	
+	return $URLarray;
 }
 
 
 $url_array = array();
 
 if (isset($argv[1])){
+	if (!is_string($argv[1])){
+		print "\nProvide the URL in 'quotes'\n";
+		exit(1);
+	}
 	$url_array = getAllData($argv[1]);
 	print "Total Number of URLs:\t" . count($url_array) . "\n\n";		
 }
