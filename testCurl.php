@@ -45,7 +45,7 @@ Return value:	The function returns the number of URLs that were outputted and/or
 */
 function getMetadata($infoArray, $fp = NULL){
 
-	$urlArray = array();
+	//$urlArray = array();
 
 	/*
 	The information in the 'response' portion of the associative array is structured as such:
@@ -58,12 +58,18 @@ function getMetadata($infoArray, $fp = NULL){
 
 	for ($i = 0; $i < $numberOfEntries; $i++){
 		
-		$url = $docArray[$i]['legacy']['web_url'];
-		print $url . "\n";
-		array_push($urlArray, $url);
+		$url = $docArray[$i]['web_url'];
+		$pub_date = $docArray[$i]['pub_date'];
+		
+		$toEncode = array();
+		array_push($toEncode, array($url, $pub_date));
+		$json_encoded_str = encodeInJSON($toEncode);
+		//print $json_encoded_str . "\n";
+		
+		//array_push($urlArray, $url);
 		
 		if ($fp){	// If the file-handle was initialized, we write to the document
-			fwrite($fp, $url);
+			fwrite($fp, $json_encoded_str);
 			fwrite($fp, "\n");
 		}
 		
@@ -106,11 +112,59 @@ function getAllData($url, $fp = NULL){
 		$numberOfArticles += $number_URLs_written;
 		//$numberOfArticles += $result[1];
 		//$URLarray = array_merge($URLarray, $result[0]);	//	append the new URLs to our URL array
+		usleep(100000);
 	}
 	
 	//return $URLarray;
 	return $numberOfArticles;
 }
+
+
+/*
+The encodeInJSON function takes an array of values and then encodes them as a single JSON entry.
+eg. array = { (key1, value1), (key2, value2) }
+
+JSON Encoding:	{ "key1" : value1, "key2" : value2, "key3" : value2 }
+
+The encoding is built as a string and returned as a string.
+*/
+function encodeInJSON($array){
+
+	$encode_str = "{ ";
+
+	for ($i = 0; $i < count($array) - 1; $i++){
+		$tuple = $array[$i];
+		if (count($tuple) >= 2){
+			//	the tuple is valid because it has, at the minimum a key/value pair
+			$key = $tuple[0];
+			$value = $tuple[1];
+			$encode_str .= "'" . $key . "':'" . $value . "', ";
+		}
+	}
+	
+	// The last element does not have a comma, we treat it differently
+	$tuple = $array[count($array) - 1];
+	if (count($tuple) >= 2){
+		//	This means the tuple is valid because it has a key/value pair
+		$key = $tuple[0];
+		$value = $tuple[1];
+		$encode_str .= "'" . $key . "':'" . $value . "'";
+		
+		/*
+		print "key:" . $key;
+		print "\tvalue" . $value;
+		exit(1);
+		print $encode_str;
+		exit(1);*/
+	}
+	
+	$encode_str .= " }";
+	/*
+	print $encode_str;
+	exit(1);*/
+	return $encode_str;
+}
+
 
 if (isset($argv[1])){
 	if (!is_string($argv[1])){
