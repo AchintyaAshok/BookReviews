@@ -1,6 +1,8 @@
-#!/usr/bin/php
 <?php
+require 'json_functions.php';
+?>
 
+<?php
 /*
 Use:	$decoded_data = extractInformation($my_URL);
 
@@ -59,18 +61,20 @@ function getMetadata($infoArray, $fp = NULL){
 	for ($i = 0; $i < $numberOfEntries; $i++){
 		
 		$url = $docArray[$i]['web_url'];
-		$pub_date = $docArray[$i]['pub_date'];
+		$pub_date = $docArray[$i]['pub_date'];		//	The Date needs a little trimming, to get rid of the exact time (which is in the majority of cases 00:00:00Z)
+		$pub_date = substr($pub_date, 0, 10);		//	The first 10 characters of the string hold the YYYY-MM-DD
 		
 		$toEncode = array();
-		array_push($toEncode, array($url, $pub_date));
+		array_push($toEncode, array("URL", $url));
+		array_push($toEncode, array("Date" , $pub_date));
 		$json_encoded_str = encodeInJSON($toEncode);
-		//print $json_encoded_str . "\n";
-		
-		//array_push($urlArray, $url);
 		
 		if ($fp){	// If the file-handle was initialized, we write to the document
 			fwrite($fp, "\t");
 			fwrite($fp, $json_encoded_str);
+			if($i < $numberOfEntries-1){		//	If this is not the last element, there are more to come so we append a comma
+				fwrite($fp, ",");
+			}
 			fwrite($fp, "\n");
 		}
 		
@@ -101,8 +105,8 @@ function getAllData($url, $fp = NULL){
 		$decoded = extractInformation($modifiedURL);
 		if (is_int($decoded))	break;									//	This means the function has returned a HTTP ErrorCode
 		
-		print "\n\nExtracting URLs. Offset = " . $offset . "\n";
-		print "Modified-URL:\t" . $modifiedURL . ":\n";
+		//print "\n\nExtracting URLs. Offset = " . $offset . "\n";
+		print "Extraction URL:\t" . $modifiedURL . ":\n\n";
 		$number_URLs_written = getMetadata($decoded, $fp);				//	extract the URLs
 		if (is_int($result))	break;									//	-1 return value indicates there are no articles 
 	
@@ -113,7 +117,7 @@ function getAllData($url, $fp = NULL){
 		$numberOfArticles += $number_URLs_written;
 		//$numberOfArticles += $result[1];
 		//$URLarray = array_merge($URLarray, $result[0]);	//	append the new URLs to our URL array
-		usleep(100000);
+		usleep(500000);
 	}
 	
 	//return $URLarray;
@@ -121,51 +125,8 @@ function getAllData($url, $fp = NULL){
 }
 
 
-/*
-The encodeInJSON function takes an array of values and then encodes them as a single JSON entry.
-eg. array = { (key1, value1), (key2, value2) }
 
-JSON Encoding:	{ "key1" : value1, "key2" : value2, "key3" : value2 }
-
-The encoding is built as a string and returned as a string.
-*/
-function encodeInJSON($array){
-
-	$encode_str = "{ ";
-
-	for ($i = 0; $i < count($array) - 1; $i++){
-		$tuple = $array[$i];
-		if (count($tuple) >= 2){
-			//	the tuple is valid because it has, at the minimum a key/value pair
-			$key = $tuple[0];
-			$value = $tuple[1];
-			$encode_str .= "'" . $key . "':'" . $value . "', ";
-		}
-	}
-	
-	// The last element does not have a comma, we treat it differently
-	$tuple = $array[count($array) - 1];
-	if (count($tuple) >= 2){
-		//	This means the tuple is valid because it has a key/value pair
-		$key = $tuple[0];
-		$value = $tuple[1];
-		$encode_str .= "'" . $key . "':'" . $value . "'";
-		
-		/*
-		print "key:" . $key;
-		print "\tvalue" . $value;
-		exit(1);
-		print $encode_str;
-		exit(1);*/
-	}
-	
-	$encode_str .= " }";
-	/*
-	print $encode_str;
-	exit(1);*/
-	return $encode_str;
-}
-
+// MAIN PROCEDURE
 
 if (isset($argv[1])){
 	if (!is_string($argv[1])){
@@ -180,9 +141,9 @@ if (isset($argv[1])){
 		$fileName = $argv[2];
 		$fp = fopen($fileName , "w+");
 		
-		fwrite($fp, "{\n");			// JSON encoded file, we open a new bracket and close it after the data has been inputted
+		fwrite($fp, "[\n");			// JSON encoded file, we open a new bracket and close it after the data has been inputted
 		$size = getAllData($argv[1], $fp);
-		fwrite($fp, "\n}");
+		fwrite($fp, "\n]");
 		
 		fclose($fp);
 	}	
