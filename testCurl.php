@@ -69,6 +69,7 @@ function getMetadata($infoArray, $fp = NULL){
 		//array_push($urlArray, $url);
 		
 		if ($fp){	// If the file-handle was initialized, we write to the document
+			fwrite($fp, "\t");
 			fwrite($fp, $json_encoded_str);
 			fwrite($fp, "\n");
 		}
@@ -178,7 +179,12 @@ if (isset($argv[1])){
 	if (isset($argv[2])){			//	Here, we check if a file name was given to output the URLs to
 		$fileName = $argv[2];
 		$fp = fopen($fileName , "w+");
+		
+		fwrite($fp, "{\n");			// JSON encoded file, we open a new bracket and close it after the data has been inputted
 		$size = getAllData($argv[1], $fp);
+		fwrite($fp, "\n}");
+		
+		fclose($fp);
 	}	
 	else{
 		$size = getAllData($argv[1]);
@@ -186,12 +192,6 @@ if (isset($argv[1])){
 		
 	$size = "Number of URLs:\t" . $size . "\n";
 	print $size;
-	
-	if ($fp){						//	terminate the file-pointer
-		fwrite($fp, "\n\n");
-		fwrite($fp, $size);
-		fclose($fp);
-	}
 }
 
 else { 	
