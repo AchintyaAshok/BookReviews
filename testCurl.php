@@ -56,7 +56,8 @@ function getMetadata($infoArray, $fp = NULL){
 
 	$docArray = $infoArray['response']['docs'];
 	$numberOfEntries = count($docArray);
-	if ($numberOfEntries == 0) return -1;;
+	print "Number of Entries:\t" . $numberOfEntries . "\n\n";
+	if ($numberOfEntries == 0) return -1;
 
 	for ($i = 0; $i < $numberOfEntries; $i++){
 		
@@ -106,9 +107,9 @@ function getAllData($url, $fp = NULL){
 		if (is_int($decoded))	break;									//	This means the function has returned a HTTP ErrorCode
 		
 		//print "\n\nExtracting URLs. Offset = " . $offset . "\n";
-		print "Extraction URL:\t" . $modifiedURL . ":\n\n";
+		print "Extraction URL:\t" . $modifiedURL . ":\n";
 		$number_URLs_written = getMetadata($decoded, $fp);				//	extract the URLs
-		if (is_int($result))	break;									//	-1 return value indicates there are no articles 
+		if ($number_URLs_written == -1)	break;									//	-1 return value indicates there are no articles 
 	
 		$offset += 10;													//	increment the offset to get the next 10 entries
 		$modifiedURL = $url . "&offset=" . $offset;						//	construct the new URL with the new offset
