@@ -97,6 +97,8 @@ The function returns the total number of URLs that were outputted and/or written
 */
 function getAllData($url, $fp = NULL){
 	
+	$url = get_jsonURL_from_queryURL($url);
+	
 	$offset = 0;
 	$numberOfArticles = 0;
 	//$URLarray = array();
@@ -125,11 +127,26 @@ function getAllData($url, $fp = NULL){
 	return $numberOfArticles;
 }
 
+/*
+	The constructURL function takes the URL from the address bar of the search API, modifies it to get the Raw Result JSON encoding of the result data and returns that URL back.
+*/
+function get_jsonURL_from_queryURL($url){
+	/*	We construct the initial portion of the URL used to get the json encoding of the search	*/
+	$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq="; 
+
+	/*	Extract only the query from the given URL to append to the initial part of our json url	*/
+	$query_position = stripos($url, "lookup//");
+	$query_string = substr($url, $query_position + 8);	//	We remove 'lookup//' and get the truncated query string we're looking for
+	
+	$json_url .= $query_string;
+	return $json_url;
+}
 
 
 // MAIN PROCEDURE
 
 if (isset($argv[1])){
+
 	if (!is_string($argv[1])){
 		print "\nProvide the URL in 'quotes'\n";
 		exit(1);
