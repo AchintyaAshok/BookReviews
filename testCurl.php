@@ -9,7 +9,12 @@ Use:	$decoded_data = extractInformation($my_URL);
 Takes the URL(json_encoded webpage from the Search API), decodes the information obtained from the webpage and returns the associative array containing all the information.
 If there is an HTTP error code that gets returned when requesting the URL, it will be returned as the return value.
 */
-function extractInformation($url){
+function extractInformation($url, $tries = 0){
+    
+        if ($tries > 20){
+            print "-- Multiple tries attempted, unable to extract from URL. --\n\n";
+            exit(1);
+        }
 
 	$curl_handle = curl_init();
 	// Configure the curl_handle 
@@ -20,14 +25,18 @@ function extractInformation($url){
 
 	// Execution:
 	$data = curl_exec($curl_handle);
-
 	
 	//SANITY CHECK
 	$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
+        
+        print "HTTP CODE:\t" . $http_code . "\n\n";
+        
 	if ($http_code != 200){
-		return $http_code;		//	If there is a HTTP Error, we terminate execution 
+            $decoded = extractInformation($url, $tries + 1);
+            curl_close($curl_handle);
+            return $decoded; 
 	}
-
+        
 	$decoded = json_decode($data, TRUE);	//	'true' makes it an associative array
 
 	curl_close($curl_handle);
@@ -97,7 +106,7 @@ The function returns the total number of URLs that were outputted and/or written
 */
 function getAllData($url, $fp = NULL){
 	
-	$url = get_jsonURL_from_queryURL($url);
+	//$url = get_jsonURL_from_queryURL($url);
 	
 	$offset = 0;
 	$numberOfArticles = 0;
@@ -120,7 +129,7 @@ function getAllData($url, $fp = NULL){
 		$numberOfArticles += $number_URLs_written;
 		//$numberOfArticles += $result[1];
 		//$URLarray = array_merge($URLarray, $result[0]);	//	append the new URLs to our URL array
-		usleep(500000);
+		usleep(100000);
 	}
 	
 	//return $URLarray;
@@ -128,56 +137,97 @@ function getAllData($url, $fp = NULL){
 }
 
 /*
-	The constructURL function takes the URL from the address bar of the search API, modifies it to get the Raw Result JSON encoding of the result data and returns that URL back.
-*/
+	The function takes the URL from the address bar of the search API, modifies it to get the Raw Result JSON encoding of the result data and returns that URL back.
+
 function get_jsonURL_from_queryURL($url){
-	/*	We construct the initial portion of the URL used to get the json encoding of the search	*/
+	//	We construct the initial portion of the URL used to get the json encoding of the search	
 	$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq="; 
 
-	/*	Extract only the query from the given URL to append to the initial part of our json url	*/
+	//	Extract only the query from the given URL to append to the initial part of our json url	
 	$query_position = stripos($url, "lookup//");
 	$query_string = substr($url, $query_position + 8);	//	We remove 'lookup//' and get the truncated query string we're looking for
 	
 	$json_url .= $query_string;
 	return $json_url;
 }
+*/
+
+
+/*
+	Our original method of pulling URLs. This is used when the person runs the script by providing a URL and an optional file-name to send output to.
+*/
+function proceed_using_URL(){
+	if (isset($argv[1])){
+	
+		$url = get_jsonURL_from_queryURL($argv[1]);
+
+		if (!is_string($argv[1])){
+			print "\nProvide the URL in 'quotes'\n";
+			exit(1);
+		}
+	
+		$size = 0;
+		$fp = NULL;						//	The uninitialized file handle
+	
+		if (isset($argv[2])){			//	Here, we check if a file name was given to output the URLs to
+			$fileName = $argv[2];
+			$fp = fopen($fileName , "w+");
+		
+			fwrite($fp, "[\n");			// JSON encoded file, we open a new bracket and close it after the data has been inputted
+			$size = getAllData($url, $fp);
+			fwrite($fp, "\n]");
+		
+			fclose($fp);
+		}	
+		else{
+			$size = getAllData($url);
+		}
+		
+		$size = "Number of URLs:\t" . $size . "\n";
+		print $size;
+	}
+
+	else { 	
+		print "\nNo URL provided. Script Use: 'php testCurl.php [URL...] [output file name (optional)]'\n";
+		print "\t-> Provide the URL in 'quotes'\n";
+		print "\t-> If you included a file name, provide it in 'quotes'\n";
+		print "\t-> Don't include the 'offset' filter in the URL, the script takes care of it\n\n";
+	}
+}
+
+function proceed_using_date_range($searchAPIurl = "http://search-add-api.prd.use1.nytimes.com/portal/#/lookup//(taxonomy_nodes%3A%22Top%2FFeatures%2FBooks%2FBook%20Reviews%22%20OR%20subject%3A%22Book%20Reviews%22%20OR%20((subject%3A%22Reviews%22%20OR%20type_of_material%3A%22Review%22)%20AND%20subject%3A%22%2FBooks%20and%20Literature%22))/newest//article///0"){
+	
+	global $argv;		//	use the global argv array so we can access its values
+	/*
+	print "First Argument:\t" . $argv[1];
+	print "\nSecond Argument:\t" . $argv[2];
+	print "\nThird Argument:\t" . $argv[3] . "\n";
+	*/
+	if( !isset($argv[1]) || !isset($argv[2]) || !isset($argv[3]) ){
+		print "\nFormat:\n"; 
+		print "A filename and two dates need to be entered\n";
+		print "php testCurl.php [filename] [start] [end]\n\n";
+		//exit(1);
+	}
+	
+	$begin_date = $argv[2];
+	$end_date = $argv[3];
+	
+	$url = get_jsonURL_from_queryURL($searchAPIurl, true, $begin_date, $end_date);
+	
+	$fileName = $argv[1];
+	$fp = fopen($fileName , "w+");
+	fwrite($fp, "[\n");			// JSON encoded file, we open a new bracket and close it after the data has been inputted
+	$size = getAllData($url, $fp);
+	fwrite($fp, "\n]");
+	fclose($fp);
+	
+	print "\nNumber of URLs:\t" . $size . "\n";	
+}
 
 
 // MAIN PROCEDURE
-
-if (isset($argv[1])){
-
-	if (!is_string($argv[1])){
-		print "\nProvide the URL in 'quotes'\n";
-		exit(1);
-	}
-	
-	$size = 0;
-	$fp = NULL;						//	The uninitialized file handle
-	
-	if (isset($argv[2])){			//	Here, we check if a file name was given to output the URLs to
-		$fileName = $argv[2];
-		$fp = fopen($fileName , "w+");
-		
-		fwrite($fp, "[\n");			// JSON encoded file, we open a new bracket and close it after the data has been inputted
-		$size = getAllData($argv[1], $fp);
-		fwrite($fp, "\n]");
-		
-		fclose($fp);
-	}	
-	else{
-		$size = getAllData($argv[1]);
-	}
-		
-	$size = "Number of URLs:\t" . $size . "\n";
-	print $size;
-}
-
-else { 	
-	print "\nNo URL provided. Script Use: 'php testCurl.php [URL...] [output file name (optional)]'\n";
-	print "\t-> Provide the URL in 'quotes'\n";
-	print "\t-> If you included a file name, provide it in 'quotes'\n";
-	print "\t-> Don't include the 'offset' filter in the URL, the script takes care of it\n\n";
-}
+//global $argv;
+proceed_using_date_range();
 
 ?>
