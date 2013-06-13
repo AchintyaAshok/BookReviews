@@ -13,7 +13,7 @@ function extractInformation($url, $tries = 0){
     
         if ($tries > 20){
             print "-- Multiple tries attempted, unable to extract from URL. --\n\n";
-            exit(1);
+            exit(2);
         }
 
 	$curl_handle = curl_init();
@@ -29,7 +29,7 @@ function extractInformation($url, $tries = 0){
 	//SANITY CHECK
 	$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
         
-        print "HTTP CODE:\t" . $http_code . "\n\n";
+        print "HTTP CODE:\t" . $http_code . "\n";
         
 	if ($http_code != 200){
             $decoded = extractInformation($url, $tries + 1);
@@ -56,8 +56,6 @@ Return value:	The function returns the number of URLs that were outputted and/or
 */
 function getMetadata($infoArray, $fp = NULL){
 
-	//$urlArray = array();
-
 	/*
 	The information in the 'response' portion of the associative array is structured as such:
 	response => docs(multiple entries) => legacy => web_url
@@ -65,7 +63,7 @@ function getMetadata($infoArray, $fp = NULL){
 
 	$docArray = $infoArray['response']['docs'];
 	$numberOfEntries = count($docArray);
-	print "Number of Entries:\t" . $numberOfEntries . "\n\n";
+	print "Number of Entries:\t" . $numberOfEntries . "\n";
 	if ($numberOfEntries == 0) return -1;
 
 	for ($i = 0; $i < $numberOfEntries; $i++){
@@ -90,7 +88,6 @@ function getMetadata($infoArray, $fp = NULL){
 		
 	}
 
-	//return array($urlArray, $numberOfEntries);
 	return $numberOfEntries;
 }
 
@@ -115,9 +112,8 @@ function getAllData($url, $fp = NULL){
 	
 	while(true){
 		$decoded = extractInformation($modifiedURL);
-		if (is_int($decoded))	break;									//	This means the function has returned a HTTP ErrorCode
+		//if (is_int($decoded))	break;									//	This means the function has returned a HTTP ErrorCode
 		
-		//print "\n\nExtracting URLs. Offset = " . $offset . "\n";
 		print "Extraction URL:\t" . $modifiedURL . ":\n";
 		$number_URLs_written = getMetadata($decoded, $fp);				//	extract the URLs
 		if ($number_URLs_written == -1)	break;									//	-1 return value indicates there are no articles 
@@ -127,8 +123,9 @@ function getAllData($url, $fp = NULL){
 		
 		
 		$numberOfArticles += $number_URLs_written;
-		//$numberOfArticles += $result[1];
-		//$URLarray = array_merge($URLarray, $result[0]);	//	append the new URLs to our URL array
+                $totalNumber = $decoded['response']['meta']['hits'];
+                $numberLeft = $totalNumber - $numberOfArticles;
+                print "Number of pieces left to pull:\t" . $numberLeft . "\n\n";
 		usleep(100000);
 	}
 	
