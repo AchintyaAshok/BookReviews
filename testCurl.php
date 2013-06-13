@@ -80,9 +80,12 @@ function getMetadata($infoArray, $fp = NULL){
 		if ($fp){	// If the file-handle was initialized, we write to the document
 			fwrite($fp, "\t");
 			fwrite($fp, $json_encoded_str);
+                        /*
 			if($i < $numberOfEntries-1){		//	If this is not the last element, there are more to come so we append a comma
 				fwrite($fp, ",");
 			}
+                        */
+                        fwrite($fp, ",");
 			fwrite($fp, "\n");
 		}
 		
@@ -112,20 +115,21 @@ function getAllData($url, $fp = NULL){
 	
 	while(true){
 		$decoded = extractInformation($modifiedURL);
-		//if (is_int($decoded))	break;									//	This means the function has returned a HTTP ErrorCode
+		//if (is_int($decoded))	break;					//	This means the function has returned a HTTP ErrorCode
 		
 		print "Extraction URL:\t" . $modifiedURL . ":\n";
-		$number_URLs_written = getMetadata($decoded, $fp);				//	extract the URLs
-		if ($number_URLs_written == -1)	break;									//	-1 return value indicates there are no articles 
+		$number_URLs_written = getMetadata($decoded, $fp);              //	extract the URLs
+		if ($number_URLs_written == -1)	break;				//	-1 return value indicates there are no articles 
 	
-		$offset += 10;													//	increment the offset to get the next 10 entries
-		$modifiedURL = $url . "&offset=" . $offset;						//	construct the new URL with the new offset
+		$offset += 10;							//	increment the offset to get the next 10 entries
+		$modifiedURL = $url . "&offset=" . $offset;			//	construct the new URL with the new offset
 		
-		
+		//  We aggregate the number of articles we have after the latest execution & figure out how many there are left to pull
 		$numberOfArticles += $number_URLs_written;
                 $totalNumber = $decoded['response']['meta']['hits'];
                 $numberLeft = $totalNumber - $numberOfArticles;
-                print "Number of pieces left to pull:\t" . $numberLeft . "\n\n";
+                print "Number of pieces left to get:\t" . $numberLeft . "\n\n";
+                
 		usleep(100000);
 	}
 	

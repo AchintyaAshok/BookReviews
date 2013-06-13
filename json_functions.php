@@ -50,7 +50,7 @@ function get_jsonURL_from_queryURL($url, $use_date_range = false, $begin_date = 
 		$json_url .= $query_string . "&sort=newest&type=article";
 	}
 	else{
-		$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=(taxonomy_nodes%3A%22Top%2FFeatures%2FBooks%2FBook%20Reviews%22%20OR%20subject%3A%22Book%20Reviews%22%20OR%20((subject%3A%22Reviews%22%20OR%20type_of_material%3A%22Review%22)%20AND%20subject%3A%22%2FBooks%20and%20Literature%22))&sort=newest&type=article";	
+		$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=(taxonomy_nodes%3A%22Top%2FFeatures%2FBooks%2FBook%20Reviews%22%20OR%20%20subject%3A%22Book%20Reviews%22%20OR%20((subject%3A%22Reviews%22%20OR%20%20type_of_material%3A%22Review%22)%20AND%20%20subject%3A%22Books%20and%20Literature%22))&sort=newest&type=article";	
 		$json_url .= "&begin_date=" . $begin_date;
 		$json_url .= "&end_date=" . $end_date;
 	}
