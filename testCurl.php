@@ -80,11 +80,6 @@ function getMetadata($infoArray, $fp = NULL){
 		if ($fp){	// If the file-handle was initialized, we write to the document
 			fwrite($fp, "\t");
 			fwrite($fp, $json_encoded_str);
-                        /*
-			if($i < $numberOfEntries-1){		//	If this is not the last element, there are more to come so we append a comma
-				fwrite($fp, ",");
-			}
-                        */
                         fwrite($fp, ",");
 			fwrite($fp, "\n");
 		}
@@ -196,14 +191,10 @@ function proceed_using_URL(){
 	}
 }
 
-function proceed_using_date_range($searchAPIurl = "http://search-add-api.prd.use1.nytimes.com/portal/#/lookup//(taxonomy_nodes%3A%22Top%2FFeatures%2FBooks%2FBook%20Reviews%22%20OR%20subject%3A%22Book%20Reviews%22%20OR%20((subject%3A%22Reviews%22%20OR%20type_of_material%3A%22Review%22)%20AND%20subject%3A%22%2FBooks%20and%20Literature%22))/newest//article///0"){
+function proceed_using_date_range(){
 	
 	global $argv;		//	use the global argv array so we can access its values
-	/*
-	print "First Argument:\t" . $argv[1];
-	print "\nSecond Argument:\t" . $argv[2];
-	print "\nThird Argument:\t" . $argv[3] . "\n";
-	*/
+
 	if( !isset($argv[1]) || !isset($argv[2]) || !isset($argv[3]) ){
 		print "\nFormat:\n"; 
 		print "A filename and two dates need to be entered\n";
@@ -214,7 +205,7 @@ function proceed_using_date_range($searchAPIurl = "http://search-add-api.prd.use
 	$begin_date = $argv[2];
 	$end_date = $argv[3];
 	
-	$url = get_jsonURL_from_queryURL($searchAPIurl, true, $begin_date, $end_date);
+	$url = get_dated_jsonURL($begin_date, $end_date);
 	
 	$fileName = $argv[1];
 	$fp = fopen($fileName , "w+");
