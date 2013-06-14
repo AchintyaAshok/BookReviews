@@ -101,11 +101,8 @@ The function returns the total number of URLs that were outputted and/or written
 */
 function getAllData($url, $fp = NULL){
 	
-	//$url = get_jsonURL_from_queryURL($url);
-	
 	$offset = 0;
 	$numberOfArticles = 0;
-	//$URLarray = array();
 	$modifiedURL = $url;
 	
 	while(true){
@@ -113,10 +110,10 @@ function getAllData($url, $fp = NULL){
 		//if (is_int($decoded))	break;					//	This means the function has returned a HTTP ErrorCode
 		
 		print "Extraction URL:\t" . $modifiedURL . ":\n";
-		$number_URLs_written = getMetadata($decoded, $fp);              //	extract the URLs
+		$number_URLs_written = getMetadata($decoded, $fp);  //	extract the URLs
 		if ($number_URLs_written == -1)	break;				//	-1 return value indicates there are no articles 
 	
-		$offset += 10;							//	increment the offset to get the next 10 entries
+		$offset += 10;										//	increment the offset to get the next 10 entries
 		$modifiedURL = $url . "&offset=" . $offset;			//	construct the new URL with the new offset
 		
 		//  We aggregate the number of articles we have after the latest execution & figure out how many there are left to pull
@@ -127,26 +124,9 @@ function getAllData($url, $fp = NULL){
                 
 		usleep(100000);
 	}
-	
-	//return $URLarray;
+
 	return $numberOfArticles;
 }
-
-/*
-	The function takes the URL from the address bar of the search API, modifies it to get the Raw Result JSON encoding of the result data and returns that URL back.
-
-function get_jsonURL_from_queryURL($url){
-	//	We construct the initial portion of the URL used to get the json encoding of the search	
-	$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq="; 
-
-	//	Extract only the query from the given URL to append to the initial part of our json url	
-	$query_position = stripos($url, "lookup//");
-	$query_string = substr($url, $query_position + 8);	//	We remove 'lookup//' and get the truncated query string we're looking for
-	
-	$json_url .= $query_string;
-	return $json_url;
-}
-*/
 
 
 /*
