@@ -21,7 +21,7 @@ function has_body_information($url){
 	
 	$json_url = get_jsonURL_from_query($encoded_url);
 	
-	print "Extraction URL:\t" . $json_url . "\n";
+	//print "Extraction URL:\t" . $json_url . "\n";
 	//exit(1);
 	
 	$decoded = extractInformation($json_url);
@@ -37,14 +37,56 @@ function has_body_information($url){
 	return true;
 }
 
+
+function check_all_urls($file_in, $file_out=NULL){
 	
-$testURL = "http://www.nytimes.com/1990/12/23/books/children-s-books-952890.html";
-if (has_body_information($testURL)){
-	print "true\n";
+	$lineArray = file($file_in);
+	$numberURLs = count($lineArray)-2;
+	print "\nNumber of URLs:\t$numberURLs\n";
+	
+	$bodyless = array();		//	Our array that holds
+	
+	for ($i=1; $i<count($lineArray)-1; $i++){
+		
+		$stringToDecode = $lineArray[$i];
+		$parsed = str_replace("\t", "", $stringToDecode);		//	Remove the tab space at the beginning of the string
+		$parsed = substr($parsed, 0, strlen($parsed)-2);		//	Remove the trailing comma at the end of the line & the newline character
+		
+		$decodedInformation = json_decode($parsed, true);		//	Decode the string into an array derived from the JSON
+		$url = $decodedInformation['URL'];
+		
+		if (!has_body_information($url)){
+			array_push($bodyless, $url);
+		}
+	
+		if($i%100 == 0){
+			print "Processed:\t$i\tRemaining:\t" . ($numberURLs - $i) . "\n";
+		}
+		//usleep(50000);
+	}
+	
+	if ($file_out){
+		$file_out_handle = fopen($file_out, "a+");
+	}
+	else{
+		$file_out_handle = NULL;
+	}
+	
+	print "\nTotal Number of URLs without a body:\t" . count($bodyless) . ":\n";
+	foreach($bodyless as $elem){
+		print "\t$elem\n";
+		if ($file_out_handle){
+			fwrite($file_out_handle, $elem);
+			fwrite($file_out_handle, "\n");	
+		}
+	}
+	
+	fclose($file_out_handle);
 }
-else{
-	print "false\n";
-}
+
+
+$url = $argv[1];
+check_all_urls($url, "missing_URLs.txt");
 
 
 ?>

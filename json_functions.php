@@ -100,7 +100,7 @@ function extractInformation($url, $tries = 0){
 	//SANITY CHECK
 	$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
         
-        print "HTTP CODE:\t" . $http_code . "\n";
+    //print "HTTP CODE:\t" . $http_code . "\n";
         
 	if ($http_code != 200){
             $decoded = extractInformation($url, $tries + 1);
