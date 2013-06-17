@@ -16,33 +16,32 @@ function has_body_information($url){
 	$to_encode = "web_url:";
 	$to_encode .= '"' . $url . '"';
 	$encoded_url = urlencode($to_encode);
-	
-	//print "encoded url:\t" . $encoded_url . "\n";
-	
 	$json_url = get_jsonURL_from_query($encoded_url);
-	
-	//print "Extraction URL:\t" . $json_url . "\n";
-	//exit(1);
-	
-	$decoded = extractInformation($json_url);
-	//print "\nvar_exporting...:\t" . var_export($decoded) . "\n\n";
-	
-	//print "\n\nLegacy size:\t" . count($decoded['response']['docs'][0]['legacy']);
-	
+
+	$decoded = extractInformation($json_url);	
 	$body = $decoded['response']['docs'][0]['legacy']['txt'];			//	This is the heirarchy of elements needed to be traversed to get the body of the review
-	//print $body;
+
 	if (strlen($body) == 0){
 		return false;
 	}
 	return true;
 }
 
-
+/*
+ * 	This function is used for checking an entire file that is encoded in JSON and determining which URLs have valid bodies associated with them in the ADD Index.
+ * 	If a link does not have a body with it, it is outputted to standard out and additionally written to a file who's name is optionally specified in the second parameter.
+ * 	The json file must be structured in a specific format, namely:
+ * 	1:		[\n
+ * 	2:		{ json-string },
+ * 			...
+ * 	n:		{ json-string }, (yes, the last line also has a comma, a consequence of the initial encoding of the files we're dealing with)
+ * 	n+1:	] 
+ */
 function check_all_urls($file_in, $file_out=NULL){
 	
 	$lineArray = file($file_in);
 	$numberURLs = count($lineArray)-2;
-	print "\nNumber of URLs:\t$numberURLs\n";
+	print "\n-- Checking File: '$file_in' --\nNumber of URLs:\t$numberURLs\n";
 	
 	$bodyless = array();		//	Our array that holds
 	
@@ -74,13 +73,13 @@ function check_all_urls($file_in, $file_out=NULL){
 	
 	print "\nTotal Number of URLs without a body:\t" . count($bodyless) . ":\n";
 	foreach($bodyless as $elem){
+	//	Output each url that doesn't have  valid body and additionally write it to the output file
 		print "\t$elem\n";
 		if ($file_out_handle){
 			fwrite($file_out_handle, $elem);
 			fwrite($file_out_handle, "\n");	
 		}
 	}
-	
 	fclose($file_out_handle);
 }
 
