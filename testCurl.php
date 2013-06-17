@@ -8,7 +8,7 @@ Use:	$decoded_data = extractInformation($my_URL);
 
 Takes the URL(json_encoded webpage from the Search API), decodes the information obtained from the webpage and returns the associative array containing all the information.
 If there is an HTTP error code that gets returned when requesting the URL, it will be returned as the return value.
-*/
+
 function extractInformation($url, $tries = 0){
     
         if ($tries > 20){
@@ -41,7 +41,7 @@ function extractInformation($url, $tries = 0){
 
 	curl_close($curl_handle);
 	return $decoded;
-}
+}*/
 
 /*
 Use:	$number_of_URLs = getMetadata($decodedContent, $file_handle[optional]);
@@ -78,9 +78,9 @@ function getMetadata($infoArray, $fp = NULL){
 		$json_encoded_str = encodeInJSON($toEncode);
 		
 		if ($fp){	// If the file-handle was initialized, we write to the document
-			fwrite($fp, "\t");
+			//fwrite($fp, "\t");
 			fwrite($fp, $json_encoded_str);
-                        fwrite($fp, ",");
+            fwrite($fp, ",");
 			fwrite($fp, "\n");
 		}
 		
