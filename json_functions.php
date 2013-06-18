@@ -1,6 +1,8 @@
 <?php
 
-$JSON_URL = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=";
+$JSON_RAW_RESULT_URL = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=";
+//$JSON_ADDINDEX_URL = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/fetch.json?collection=articles&filter=%7B%22meta.filter.document_source%22%3A%22";
+$JSON_ADDINDEX_URL= "http://search-add-api.prd.use1.nytimes.com/svc/indexmanager/v1/convert.json?collection=articles&_id=";
 
 /*
 The encodeInJSON function takes an array of values and then encodes them as a single JSON entry.
@@ -44,8 +46,9 @@ function get_jsonURL_from_queryURL($url){
 	//	We construct the initial portion of the URL used to get the json encoding of the search	*/
 	
         //  This means the input URL is the URL from the search API, not the Raw Results URL, which means we need to parse it and make some changes to get the JSON url
-            
-	$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq="; 
+    global $JSON_RAW_RESULT_URL;
+    $json_url = $JSON_RAW_RESULT_URL;      
+	//$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq="; 
 	//	Extract only the query from the given URL to append to the initial part of our json url	
 	
 	$query_start_pos = stripos($url, "lookup//");
@@ -59,10 +62,22 @@ function get_jsonURL_from_queryURL($url){
  * 	The difference between this function and get_jsonURL_from_queryURL is that this simply takes a HTML encoded query string and returns a URL that refers to the JSON URL of the raw results. There is no parsing involved.
 */
 function get_jsonURL_from_query($query_str){
-	global $JSON_URL;
-	$json_url_str = $JSON_URL . $query_str;
+	global $JSON_RAW_RESULT_URL;
+	$json_url_str = $JSON_RAW_RESULT_URL . $query_str;
 	return $json_url_str;
 }
+
+
+
+function get_ADDIndexURL_from_id($id){
+	global $JSON_ADDINDEX_URL;
+	$url = $JSON_ADDINDEX_URL;
+	//print $url;
+	$url .= $id;
+	return $url;
+}
+
+
 
 /*
  * This function uses a pre-defined raw result URL (which returns results in json encoding) and appends the date filter to it.
@@ -85,7 +100,7 @@ function extractInformation($url, $tries = 0){
     
 	if ($tries > 20){
 		print "-- Multiple tries attempted, unable to extract from URL. --\n\n";
-		exit(2);
+		return -1;
 	}
 
 	$curl_handle = curl_init();

@@ -10,6 +10,7 @@ require 'json_functions.php';
 
 /*
  * 	This function checks if the given URL(referring to a book review) has content in the entry's body. The function will return true if the body has information and false otherwise.
+ * 	It checks the ADD Index of the given URL to see if there is any content.
  */
 function has_body_information($url){
 	
@@ -18,13 +19,30 @@ function has_body_information($url){
 	$encoded_url = urlencode($to_encode);
 	$json_url = get_jsonURL_from_query($encoded_url);
 
-	$decoded = extractInformation($json_url);	
-	$body = $decoded['response']['docs'][0]['legacy']['txt'];			//	This is the heirarchy of elements needed to be traversed to get the body of the review
-
-	if (strlen($body) == 0){
+	$decoded = extractInformation($json_url);
+	if (is_int($decoded)){
+		print "Unable to extract from Raw-URL:\t$json_url\n";
 		return false;
 	}
-	return true;
+	$id = $decoded['response']['docs'][0]['_id'];
+	//print "id=$id\n";
+	
+	$addIndexURL = get_ADDIndexURL_from_id($id);
+	$ADDdecode = extractInformation($addIndexURL);
+	if (is_int($decoded)){
+		print "Unable to extract from ADD-URL:\t$addIndexURL\n";
+		return false;
+	}
+	
+	$body = $ADDdecode['body'];
+	if($body){
+		//print "YESSSSSS\n";
+		return true;
+	}
+	else{
+		//print "No :(\n";
+		return false;
+	}
 }
 
 /*
@@ -34,7 +52,7 @@ function has_body_information($url){
  * 	1:		[\n
  * 	2:		{ json-string },
  * 			...
- * 	n:		{ json-string }, (yes, the last line also has a comma, a consequence of the initial encoding of the files we're dealing with)
+ * 	n:		{ json-string }
  * 	n+1:	] 
  */
 function check_all_urls($file_in, $file_out=NULL){
@@ -47,9 +65,19 @@ function check_all_urls($file_in, $file_out=NULL){
 	
 	for ($i=1; $i<count($lineArray)-1; $i++){
 		
+		
 		$stringToDecode = $lineArray[$i];
+		/*
 		$parsed = str_replace("\t", "", $stringToDecode);		//	Remove the tab space at the beginning of the string
 		$parsed = substr($parsed, 0, strlen($parsed)-2);		//	Remove the trailing comma at the end of the line & the newline character
+		*/
+		$leftPosition = strripos($stringToDecode, '{');
+		if(!$leftPosition)	continue;
+		$rightPosition = strripos($stringToDecode, '}');
+		
+		$parsed = substr($stringToDecode, $leftPosition, $rightPosition-$leftPosition + 1);	//	Just get the content within the brackets {...}
+		//print "Parsed json:\t$parsed\n";
+		//exit(1);
 		
 		$decodedInformation = json_decode($parsed, true);		//	Decode the string into an array derived from the JSON
 		$url = $decodedInformation['URL'];
@@ -85,7 +113,7 @@ function check_all_urls($file_in, $file_out=NULL){
 
 
 $url = $argv[1];
-check_all_urls($url, "missing_URLs.txt");
+check_all_urls($url, "missing_URLs_revised.txt");
 
 
 ?>
