@@ -13,36 +13,12 @@ require 'json_functions.php';
  * 	It checks the ADD Index of the given URL to see if there is any content.
  */
 function has_body_information($url){
-	
-	$to_encode = "web_url:";
-	$to_encode .= '"' . $url . '"';
-	$encoded_url = urlencode($to_encode);
-	$json_url = get_jsonURL_from_query($encoded_url);
-
-	$decoded = extractInformation($json_url);
-	if (is_int($decoded)){
-		print "Unable to extract from Raw-URL:\t$json_url\n";
-		return false;
-	}
-	$id = $decoded['response']['docs'][0]['_id'];
-	//print "id=$id\n";
-	
-	$addIndexURL = get_ADDIndexURL_from_id($id);
-	$ADDdecode = extractInformation($addIndexURL);
-	if (is_int($decoded)){
-		print "Unable to extract from ADD-URL:\t$addIndexURL\n";
-		return false;
-	}
+	$data = get_ADDIndexInformation_from_url($url);
+	if(!$data)	return false;	//	This means it was unable to extract information from the given url
 	
 	$body = $ADDdecode['body'];
-	if($body){
-		//print "YESSSSSS\n";
-		return true;
-	}
-	else{
-		//print "No :(\n";
-		return false;
-	}
+	if($body)	return true;
+	else		return false;
 }
 
 /*
@@ -65,22 +41,11 @@ function check_all_urls($file_in, $file_out=NULL){
 	
 	for ($i=1; $i<count($lineArray)-1; $i++){
 		
-		
 		$stringToDecode = $lineArray[$i];
-		/*
-		$parsed = str_replace("\t", "", $stringToDecode);		//	Remove the tab space at the beginning of the string
-		$parsed = substr($parsed, 0, strlen($parsed)-2);		//	Remove the trailing comma at the end of the line & the newline character
-		*/
-		$leftPosition = strripos($stringToDecode, '{');
-		if(!$leftPosition)	continue;
-		$rightPosition = strripos($stringToDecode, '}');
+		$data = parse_json_get_data($stringToDecode);
+		if(!$data)	continue;		//	This means it was not able to be parsed and information could not be extricated
 		
-		$parsed = substr($stringToDecode, $leftPosition, $rightPosition-$leftPosition + 1);	//	Just get the content within the brackets {...}
-		//print "Parsed json:\t$parsed\n";
-		//exit(1);
-		
-		$decodedInformation = json_decode($parsed, true);		//	Decode the string into an array derived from the JSON
-		$url = $decodedInformation['URL'];
+		$url = $data['URL'];
 		
 		if (!has_body_information($url)){
 			array_push($bodyless, $url);

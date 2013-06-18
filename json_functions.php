@@ -1,7 +1,13 @@
 <?php
+/*
+ * 	Author:	Achintya Ashok
+ * 	
+ * 	Purpose:	This file includes a collection of functions that get the json stored information that is present in the NYT Search API.
+ * 				The global variables defined in the file are associated with the url that is used to search the RAW_RESULT page of an entry and the ADD Index storage of entries.
+ */
+
 
 $JSON_RAW_RESULT_URL = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=";
-//$JSON_ADDINDEX_URL = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/fetch.json?collection=articles&filter=%7B%22meta.filter.document_source%22%3A%22";
 $JSON_ADDINDEX_URL= "http://search-add-api.prd.use1.nytimes.com/svc/indexmanager/v1/convert.json?collection=articles&_id=";
 
 /*
@@ -39,27 +45,39 @@ function encodeInJSON($array){
 	return $encode_str;
 }
 
-/*
-	The function takes the URL from the address bar of the search API, modifies it to get the Raw Result JSON URL.
-*/
-function get_jsonURL_from_queryURL($url){
-	//	We construct the initial portion of the URL used to get the json encoding of the search	*/
-	
-        //  This means the input URL is the URL from the search API, not the Raw Results URL, which means we need to parse it and make some changes to get the JSON url
-    global $JSON_RAW_RESULT_URL;
-    $json_url = $JSON_RAW_RESULT_URL;      
-	//$json_url = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq="; 
-	//	Extract only the query from the given URL to append to the initial part of our json url	
-	
-	$query_start_pos = stripos($url, "lookup//");
-        $query_string = substr($url, $query_start_pos + 8);	//	We remove 'lookup//' and get the truncated query string we're looking for
-	$json_url .= $query_string . "&sort=newest&type=article";
-	
-	return $json_url;
-}
+
 
 /*
- * 	The difference between this function and get_jsonURL_from_queryURL is that this simply takes a HTML encoded query string and returns a URL that refers to the JSON URL of the raw results. There is no parsing involved.
+ * 	This function takes as a paramter, a url to the New York Times article. It then compiles all the information that exists in its ADD Index entry and returns it in the form of an associative array.
+ * 	The function will return false if it is unable to extract the ADD Index entry from the given URL.
+ */
+function get_ADDIndexInformation_from_url($url){
+	$to_encode = "web_url:";				//	Construct the query string, which is composed of the filter, 'web_url:' and the element, the url
+	$to_encode .= '"' . $url . '"';
+	$encoded_url = urlencode($to_encode);
+	$json_url = get_jsonURL_from_query($encoded_url);
+	
+	$decodedRawInformation = extractInformation($json_url);
+	if (is_int($decodedRawInformation)){
+		print "Unable to extract from Raw-URL:\t$json_url\n";
+		return false;
+	}
+	$id = $decodedRawInformation['response']['docs'][0]['_id'];		//	The asset id is the unique identifier that distinguishes an article in the ADD Index Database
+	
+	$addIndexURL = get_ADDIndexURL_from_id($id);
+	$decodedADDInformation = extractInformation($addIndexURL);
+	if (is_int($decodedADDInformation)){
+		print "Unable to extract from ADD-URL:\t$addIndexURL\n";
+		return false;
+	}
+	
+	return $decodedADDInformation;
+}
+
+
+
+/*
+ * 	This function takes a HTML encoded query string (in the form 'filter:"http...") and returns a URL that refers to the JSON URL of the raw results.
 */
 function get_jsonURL_from_query($query_str){
 	global $JSON_RAW_RESULT_URL;
@@ -68,11 +86,12 @@ function get_jsonURL_from_query($query_str){
 }
 
 
-
+/*
+ * 	Use this function to retrieve the ADD Index (json-encoded) URL from the asset_id of data retreived from the Search API.
+ */
 function get_ADDIndexURL_from_id($id){
 	global $JSON_ADDINDEX_URL;
 	$url = $JSON_ADDINDEX_URL;
-	//print $url;
 	$url .= $id;
 	return $url;
 }
@@ -89,6 +108,24 @@ function get_dated_jsonURL($begin_date, $end_date){
     $json_url .= "&end_date=" . $end_date;
     return $json_url;
 }
+
+
+/*
+ * 	The function takes a string that represents a json encoding in the form { key:value, key:value, etc. } and returns an associative array of key/value pairs.
+ */
+function parse_json_get_data($stringToDecode){
+	
+	$leftPosition = strripos($stringToDecode, '{');
+	if(!$leftPosition)	return false;						//	If strripos returns false, that means we don't have a left bracket and this isn't a valid line to parse
+	$rightPosition = strripos($stringToDecode, '}');
+	
+	$parsed = substr($stringToDecode, $leftPosition, $rightPosition-$leftPosition + 1);	//	Just get the content within the brackets {...}
+	$decoded_json = json_decode($parsed, true);
+	
+	return $decoded_json;
+}
+
+
 
 /*
 Use:	$decoded_data = extractInformation($my_URL);

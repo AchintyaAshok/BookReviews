@@ -1,6 +1,5 @@
-dirname=$1
-cd $dirname
-
+FILE_DIRECTORY=$1
+cd $FILE_DIRECTORY
 
 for i in *
 do
