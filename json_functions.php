@@ -28,6 +28,7 @@ function encodeInJSON($array){
 			//	the tuple is valid because it has, at the minimum a key/value pair
 			$key = $tuple[0];
 			$value = $tuple[1];
+			if (is_array($value)) $value = implode(" ", $value);
 			$encode_str .= '"' . $key . '":"' . $value . '", ';
 		}
 	} 
@@ -38,7 +39,8 @@ function encodeInJSON($array){
 		//	This means the tuple is valid because it has a key/value pair
 		$key = $tuple[0]; 
 		$value = $tuple[1];
-		$encode_str .= '"' . $key . '":"' . $value . '", ';	
+		if (is_array($value)) $value = implode(" ", $value);
+		$encode_str .= '"' . $key . '":"' . $value;	
 	}
 	
 	$encode_str .= " }";

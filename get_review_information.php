@@ -15,22 +15,36 @@ require 'json_functions.php';
 require 'book_review_class.php';
 
 
-function get_all_reviews($file_name){
+function get_all_reviews($file_name, $out_file){
 	
-	$line_array = fill($file_name);
+	$line_array = file($file_name);
+	$fileHandleOut = fopen($out_file, "a+");
+	$counter = 0;
+	
+	$numberURLs = count($line_array)-2;
+	print "\n-- Checking File: '$file_name' --\nNumber of URLs:\t$numberURLs\n";
 	
 	foreach($line_array as $line){
 		$data = parse_json_get_data($line);
-		if (!$data)	continue;		//	If the returned value was false, the function was unable to fetch the elements from the line.
-		$url = $data['URL'];		//	The key for the url field in the json string is 'URL' (eg. { "URL" : "http://....", Date:...}
+		if (!$data)	continue;			//	If the returned value was false, the function was unable to fetch the elements from the line.
+		$url = $data['URL'];			//	The key for the url field in the json string is 'URL' (eg. { "URL" : "http://....", Date:...}
 		
 		//	Now we have to determine what metadata we want returned back to us. In this case, we want the web_url, headline, persons, pub_date, _id
-		$keys = array('web_url', 'headline', 'persons', 'pub_date','_id');
+		$keys = array('web_url', '_id', 'pub_date', 'headline', 'persons', 'creative_works', 'lead_paragraphs');
 		$associations = get_data_from_tags($url, $keys);
-		if(!$associations)	continue;
-		var_export($associations);
-		exit(1);
+		if(!$associations)	continue;	//	If the get_data... function returns false, it was unable to return data, so we skip encoding it
+		
+		$encoded = encodeInJSON($associations);
+		fwrite($fileHandleOut, $encoded);
+		fwrite($fileHandleOut, ",\n");
+		
+		$counter++;
+		if ($counter % 100 == 0){
+			print "Processed: $counter entries...\n";
+		}
 	}
+	
+	fclose($fileHandleOut);
 }
 
 
@@ -75,7 +89,7 @@ function get_value_recursive($arr, $search_key, $depth_limit=NULL){
  * If the key exists, it will return the value associated with it otherwise returning false.
  */
 function get_value_recursive_depth($arr, $search_key, $depth_limit, $current_depth){
-	if ($depth_limit < $current_depth){
+	if ($current_depth > $depth_limit){
 		return false;
 	}
 	if (array_key_exists("$search_key", $arr)){
@@ -84,7 +98,7 @@ function get_value_recursive_depth($arr, $search_key, $depth_limit, $current_dep
 	
 	foreach($arr as $key=>$elem){
 		if (is_array($elem)){
-			$value = get_value_recursive($elem, $search_key, $depth_limit, $current_depth+1);
+			$value = get_value_recursive($elem, $search_key, $depth_limit, $current_depth+1);	//	Recurse another level
 			if (!is_bool($value)){
 				return $value;
 			}
@@ -98,11 +112,20 @@ function get_value_recursive_depth($arr, $search_key, $depth_limit, $current_dep
 
 //	MAIN CODE
 
+$filename = $argv[1];
+$outputFile = $argv[2];
+if ( !isset($argv[1]) || !isset($argv[1]) ){
+	print "Function Usage:\tphp get_review_information.php [input file] [output file]\n";
+	exit(1);
+}
+get_all_reviews($filename, "review_info_output.txt");
+
+/*
 $tags = array();
 array_push($tags, "_id");
 array_push($tags, "pub_date");
 get_data_from_tags("http://www.nytimes.com/2003/09/14/books/boox.html", $tags);
-
+*/
 
 /*
 print "\n\n";
