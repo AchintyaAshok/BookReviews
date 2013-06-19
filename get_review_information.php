@@ -4,15 +4,15 @@
  * 	Creation-Date:	06/18/13
  * 
  * 	Purpose:		Use this script to compile information, connecting Book Reviews to their asset id's (and optionally storing this related information in a file).
- * 					The file constructs objects that cumulatively create information, finding the author, title and text.
+ * 					The file finds metainformation about a times article. Specifically, it uses the ADD Index to retrieve information. 
  * 					
  * 					[Future Additions:
  * 						1) Finding the ISBN of a book review
  * 					]
  */
 
-require 'json_functions.php';
-require 'book_review_class.php';
+require_once 'data_functions.php';
+require_once 'json_functions.php';
 
 
 function get_all_reviews($file_name, $out_file){
@@ -70,41 +70,6 @@ function get_data_from_tags($url, $tagArray){
 	}
 	
 	return $result;
-}
-
-
-/*
- * 	The wrapper function for get_value_recursive_depth(...) which takes the array, the key for which we're trying to find a value, and an optional value, depth_limit which limits the depth to which the function will search for the key.
- * 	If the key is not found, the function will return false. If a depth_limit is not specified, it will check to a depth of 10 levels by default.
- */
-function get_value_recursive($arr, $search_key, $depth_limit=NULL){
-	if (!$depth_limit){
-		return get_value_recursive_depth($arr, $search_key, 10, 0);
-	}
-	return get_value_recursive_depth($arr, $search_key, $depth_limit, 0);
-}
-
-/*	
- * Recursively searches an array of key,value associations. The Depth is limited to the $depth_limit parameter. 
- * If the key exists, it will return the value associated with it otherwise returning false.
- */
-function get_value_recursive_depth($arr, $search_key, $depth_limit, $current_depth){
-	if ($current_depth > $depth_limit){
-		return false;
-	}
-	if (array_key_exists("$search_key", $arr)){
-		return $arr[$search_key];
-	}
-	
-	foreach($arr as $key=>$elem){
-		if (is_array($elem)){
-			$value = get_value_recursive($elem, $search_key, $depth_limit, $current_depth+1);	//	Recurse another level
-			if (!is_bool($value)){
-				return $value;
-			}
-		}
-	}
-	return false;
 }
 
 

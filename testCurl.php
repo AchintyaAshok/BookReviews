@@ -1,48 +1,9 @@
 <?php
-require 'json_functions.php';
+require_once 'json_functions.php';
+require_once 'data_functions.php';
 ?>
 
 <?php
-/*
-Use:	$decoded_data = extractInformation($my_URL);
-
-Takes the URL(json_encoded webpage from the Search API), decodes the information obtained from the webpage and returns the associative array containing all the information.
-If there is an HTTP error code that gets returned when requesting the URL, it will be returned as the return value.
-
-function extractInformation($url, $tries = 0){
-    
-        if ($tries > 20){
-            print "-- Multiple tries attempted, unable to extract from URL. --\n\n";
-            exit(2);
-        }
-
-	$curl_handle = curl_init();
-	// Configure the curl_handle 
-	curl_setopt($curl_handle,CURLOPT_URL, $url);
-	curl_setopt($curl_handle,CURLOPT_RETURNTRANSFER, TRUE);
-	curl_setopt($curl_handle,CURLOPT_FOLLOWLOCATION, 1);
-
-
-	// Execution:
-	$data = curl_exec($curl_handle);
-	
-	//SANITY CHECK
-	$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
-        
-        print "HTTP CODE:\t" . $http_code . "\n";
-        
-	if ($http_code != 200){
-            $decoded = extractInformation($url, $tries + 1);
-            curl_close($curl_handle);
-            return $decoded; 
-	}
-        
-	$decoded = json_decode($data, TRUE);	//	'true' makes it an associative array
-
-	curl_close($curl_handle);
-	return $decoded;
-}*/
-
 /*
 Use:	$number_of_URLs = getMetadata($decodedContent, $file_handle[optional]);
 

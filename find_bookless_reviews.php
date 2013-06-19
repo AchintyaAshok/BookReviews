@@ -6,7 +6,8 @@
  * 	Purpose:		This script is used to find all the Book Reviews from a given json file of book reviews that do not have bodies stored in the metadata of the file.
  */
 
-require 'json_functions.php';
+require_once 'json_functions.php';
+require_once 'data_functions.php';
 
 /*
  * 	This function checks if the given URL(referring to a book review) has content in the entry's body. The function will return true if the body has information and false otherwise.
