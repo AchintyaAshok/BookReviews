@@ -9,69 +9,53 @@ require_once 'json_functions.php';
 
 
 /*
- * 	This function returns an array containing tuples of id's matched with the url of the article. The function requires a start date and end date for the book reviews that are being searched.
- */
-function get_id_map($start, $end){
-	$json_url = get_dated_jsonURL($start, $end);
-	$data = extractInformation($json_url);	//	All the documents with a 0 offset
-	$url = $json_url;	//	We have to keep modifying this element by changing the offset to get more entries
-	$offset = 0;
-	
-	$idMap = array();
-	
-	while(true){
-		$data = extractInformation($url);
-		$docs = $data['response']['docs'];
-		if (count($docs) == 0)	break;		//	This means we have no more entries to check
-		
-		hash_entries($idMap, $docs, "_id", "web_url");
-		
-		$offset += 10;
-		$url = $json_url . "&offset=$offset";
-	}
-	
-	return $idMap;
-}
-
-
-/*
- * 	The hash_entries function takes a map (an associative array representing a hash-map), an array containing entries(arrays) with a $key field and a $value field.
- * 	The function then generates a key/value pair based on the values the array gives, creates an associative $key=>$value entry, and then adds it to the map.
- */
-function hash_entries(&$map, &$array, $key_name, $value_name){
-	foreach($array as $piece){
-		$key = $piece["$key_name"];
-		$value = $piece["$value_name"];
-		$map[$key] = $value;
-	}
-}
-
-
-/*
  * 	This function takes a file that has been encoded in json, retrieves each entry individually, and uses the author and title fields as search queries for any book reviews that have been made.
  * 	If a book review is found to be matching to the author/title combination, the function creates a tuple that maps the URL of the article to the ISBN of the book the review was made on.
  */
-function find_matching_reviews($filename){
+function find_matching_reviews($filename, $outfile){
+	
+	$timeStart = microtime(true);
+	$numberResults = 0;				//	This identifies the number of JSON strings that were successfully parsed and processed.
+	$numberMatched = 0;
+	
+	$fileOutHandle = fopen($outfile, "w+");
 	$line_array = file($filename);
+	
+	fwrite($fileOutHandle, "[");
+	
 	foreach($line_array as $line){
 		//print "Decoding Line:\t$line\n";
 		$data = parse_json_get_data($line);
 		//var_export($data);
 		if(!$data)		continue;	//	If the parse_json function is unable to extract information from the line, it returns false and we skip this entry
+		$numberResults++;
 		
 		$author = $data['author'];
 		$title = $data['title'];
 		$isbn = $data['isbns'];
 		
-		$valuesToGet = array('web_url', '_id');		//	These are the elements we want to get from the Raw Result of our Book Review
+		$valuesToGet = array('web_url');		//	These are the elements we want to get from the Raw Result of our Book Review
 		
 		$results = search_for_review($title, $author, $valuesToGet);
 		if (!$results)	continue;	//	If it was unable to find results, we skip the entry.
+		array_push($results, array("Author", $author));
+		array_push($results, array("Title", $title));
 		array_push($results, array("ISBN", $isbn));
 		$encodedJsonString = encodeInJSON($results);
+		$numberMatched++;
 		
-		print "\n\nEncoded Result:\t$encodedJsonString\n\n";
+		print "\nEncoded Result:\t$encodedJsonString\n";
+		fwrite($fileOutHandle, $encodedJsonString);
+		fwrite($fileOutHandle, ",\n");
 	}
+	
+	fwrite($fileOutHandle, "]");
+	
+	$timeEnd = microtime(true);
+	$totalTime = $timeEnd - $timeStart;
+	print "\n\nProcessed: $numberResults -- Found: $numberMatched -- Time Elapsed: $totalTime seconds.\n\n"; 
+	
+	fclose($fileOutHandle);
 }
 
 /*
@@ -82,10 +66,13 @@ function find_matching_reviews($filename){
 function search_for_review($title, $author, $toReturn){
 	
 	$encodedAuthorTitle = urlencode('"'.$title.'" "'.$author.'"');
-	$encodedFilter = urlencode('(taxonomy_nodes:"Top/Features/Books/Book Reviews" OR  subject:"Book Reviews" OR ((subject:"Reviews" OR  type_of_material:"Review") AND  subject:"Books and Literature"))');
+	/*$encodedFilter = urlencode('(taxonomy_nodes:"Top/Features/Books/Book Reviews" OR  subject:"Book Reviews" OR ((subject:"Reviews" OR  type_of_material:"Review") AND  subject:"Books and Literature"))');
 	$queryStr = $encodedFilter . "&q=$encodedAuthorTitle";
 	
-	$json_url = get_jsonURL_from_query($queryStr);
+	$json_url = get_jsonURL_from_query($queryStr);*/
+	
+	$json_url = get_dated_jsonURL("19810101", "20131231");
+	$json_url .= "&q=$encodedAuthorTitle";
 	
 	$extractedData = extractInformation($json_url);
 	if (!extractedData)					return false;
@@ -120,6 +107,6 @@ var_export($map);
 //var_export($map);
 
 //search_for_review("Steve Jobs", "Isaacson, Walter", array('a', 'b'));
-find_matching_reviews("testAuthorTitle.txt");
+find_matching_reviews("lastThousand2.txt", "matchedReviews.txt");
 
 ?>

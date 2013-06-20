@@ -9,7 +9,7 @@
 require_once 'data_functions.php';
 
 
-$JSON_RAW_RESULT_URL = "http://search-add-api.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&fq=";
+$JSON_RAW_RESULT_URL = "http://search-add-api-a.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&sort=relavence&fq=";
 $JSON_ADDINDEX_URL= "http://search-add-api.prd.use1.nytimes.com/svc/indexmanager/v1/convert.json?collection=articles&_id=";
 
 

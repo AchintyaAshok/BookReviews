@@ -56,7 +56,7 @@ function encodeInJSON($array){
 		$key = $tuple[0];
 		$value = $tuple[1];
 		if (is_array($value)) $value = implode(" ", $value);
-		$encode_str .= '"' . $key . '":"' . $value;
+		$encode_str .= '"' . $key . '":"' . $value . '"';
 	}
 
 	$encode_str .= " }";
