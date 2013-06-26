@@ -21,6 +21,8 @@ function find_matching_reviews($filename, $outfile){
 	$fileOutHandle = fopen($outfile, "w+");
 	$line_array = file($filename);
 	
+	$prefix = " ";
+	
 	fwrite($fileOutHandle, "[");
 	
 	foreach($line_array as $line){
@@ -34,7 +36,7 @@ function find_matching_reviews($filename, $outfile){
 		$title = $data['title'];
 		$isbn = $data['isbns'];
 		
-		$valuesToGet = array('web_url');		//	These are the elements we want to get from the Raw Result of our Book Review
+		$valuesToGet = array('web_url', 'score');		//	These are the elements we want to get from the Raw Result of our Book Review
 		
 		$results = search_for_review($title, $author, $valuesToGet);
 		if (!$results)	continue;	//	If it was unable to find results, we skip the entry.
@@ -45,8 +47,9 @@ function find_matching_reviews($filename, $outfile){
 		$numberMatched++;
 		
 		print "\nEncoded Result:\t$encodedJsonString\n";
+		fwrite($fileOutHandle, $prefix);
 		fwrite($fileOutHandle, $encodedJsonString);
-		fwrite($fileOutHandle, ",\n");
+		$prefix = ",\n";
 	}
 	
 	fwrite($fileOutHandle, "]");
@@ -75,7 +78,7 @@ function search_for_review($title, $author, $toReturn){
 	$json_url .= "&q=$encodedAuthorTitle";
 	
 	$extractedData = extractInformation($json_url);
-	if (!extractedData)					return false;
+	if (!$extractedData)					return false;
 	
 	$possibleMatches = $extractedData['response']['docs'];
 	if (count($possibleMatches) == 0) 	return false;
@@ -107,6 +110,8 @@ var_export($map);
 //var_export($map);
 
 //search_for_review("Steve Jobs", "Isaacson, Walter", array('a', 'b'));
-find_matching_reviews("lastThousand2.txt", "matchedReviews.txt");
+$filename = $argv[1];
+$out_filename = "matched_from_$filename";
+find_matching_reviews($filename, $out_filename);
 
 ?>
