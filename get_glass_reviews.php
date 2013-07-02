@@ -93,13 +93,8 @@ function get_all_glass_entries(){
 	print "\n\nTotal Entries Processed:\t$total\nTotal Time Elapsed:\t$computeTime\n";
 }
 
+//	MAIN PROCEDURE
 
 get_all_glass_entries();
-
-// $str = 'Renegade: Henry Miller and the Making of "Tropic of Cancer"';
-// print "Before:\t$str\n";
-// //preg_replace('"', "", $str);
-// $str = str_replace('"', "", $str);
-// print "After:\t$str\n";
 
 ?>

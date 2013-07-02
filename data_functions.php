@@ -13,12 +13,10 @@
 function parse_json_get_data($stringToDecode){
 
 	$leftPosition = strripos($stringToDecode, '{');
-	//print "lp:\t$leftPosition\n";
 	$rightPosition = strripos($stringToDecode, '}');
 	if(is_bool($leftPosition) || is_bool($rightPosition))	return false;						//	If strripos returns false, that means we don't have a bracket and this isn't a valid line to parse, but 0 also == false, and we avoid this problem
 
 	$parsed = substr($stringToDecode, $leftPosition, $rightPosition-$leftPosition + 1);	//	Just get the content within the brackets {...}
-	//print "We found the string to parse! => $parsed\n";
 	$decoded_json = json_decode($parsed, true);
 
 	return $decoded_json;
@@ -133,7 +131,6 @@ function get_value_recursive_depth($arr, $search_key, $depth_limit, $current_dep
 
 	foreach($arr as $key=>$elem){
 		if (is_array($elem)){
-			//var_export($elem);
 			$value = get_value_recursive($elem, $search_key, $depth_limit, $current_depth+1);	//	Recurse another level
 			if (!is_bool($value)){
 				return $value;
