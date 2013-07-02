@@ -11,6 +11,26 @@ require_once 'data_functions.php';
 
 $JSON_RAW_RESULT_URL = "http://search-add-api-a.prd.use1.nytimes.com/svc/add/v1/lookup.json?_showQuery=true&sort=relavence&fq=";
 $JSON_ADDINDEX_URL= "http://search-add-api.prd.use1.nytimes.com/svc/indexmanager/v1/convert.json?collection=articles&_id=";
+$JSON_GLASS_PREFIX= "http://glass-output.prd.use1.nytimes.com/glass/outputmanager/V1/add.json?";
+
+
+/*
+*	The function takes the url of an article which has a glass entry. It then returns an associative array of information relating to the metadata of the article as it exists on glass.
+*	If the article was not inputted into Glass, the function returns false, indicating that no information could be retrieved for the url.
+*/
+function get_glassInformation_from_url($url){
+	global $JSON_GLASS_PREFIX;
+	$glassURL = $JSON_GLASS_PREFIX;
+	$encodedUrl = 'url=' . urlencode($url);	#	encode the url and prefix it with the filter you're searching with glass, in this case, the url of the article.
+	
+	$glassURL .= $encodedUrl . "&source=scoop&type=article";	#	The suffix that makes the Search API return articles in glass inputted through scoop
+	//print "Glass URL:\t$glassURL\n";
+	$data = extractInformation($glassURL);
+	if (is_int($data)) return false;		#	If it is unable to extract any information from the constructed glass url, we return false.
+
+	return $data;
+}
+
 
 
 /*
@@ -68,13 +88,19 @@ function get_ADDIndexURL_from_id($id){
  * This function uses a pre-defined raw result URL (which returns results in json encoding) and appends the date filter to it.
 * The two parameters are self-explanatory, it must be a valid date range inputted in the format YYYYMMDD. It will return this URL.
  */
-function get_dated_jsonURL($begin_date, $end_date){
-    $fq = "(taxonomy_nodes%3A%22Top%2FFeatures%2FBooks%2FBook%20Reviews%22%20OR%20%20subject%3A%22Book%20Reviews%22%20OR%20((subject%3A%22Reviews%22%20OR%20%20type_of_material%3A%22Review%22)%20AND%20%20subject%3A%22Books%20and%20Literature%22))&sort=newest&type=article";
+function get_dated_jsonURL($begin_date, $end_date, $opt_filter = NULL){
+    $fq = "(taxonomy_nodes%3A%22Top%2FFeatures%2FBooks%2FBook%20Reviews%22%20OR%20%20subject%3A%22Book%20Reviews%22%20OR%20((subject%3A%22Reviews%22%20OR%20%20type_of_material%3A%22Review%22)%20AND%20%20subject%3A%22Books%20and%20Literature%22))";
+    if ($opt_filter){
+    	$fq .= $opt_filter;
+    }
+    $fq .= "&sort=newest&type=article";
 	global $JSON_RAW_RESULT_URL;
 	$json_url = $JSON_RAW_RESULT_URL;
 	$json_url .= $fq;
 	$json_url .= "&begin_date=" . $begin_date;
     $json_url .= "&end_date=" . $end_date;
+
+
     return $json_url;
 }
 
