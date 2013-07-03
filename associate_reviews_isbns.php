@@ -99,17 +99,6 @@ function search_for_review($title, $author, $toReturn){
 
 
 
-/*
-$map = array();
-$array = array(array("key"=>111, "value"=>"http://www.google.com"), array("key"=>999, "value"=>"http://www.facebook.com"));
-hash_entries($map, $array, "key", "value");
-var_export($map);
-*/
-
-//$map = get_id_map($start, $end);
-//var_export($map);
-
-//search_for_review("Steve Jobs", "Isaacson, Walter", array('a', 'b'));
 $filename = $argv[1];
 $out_filename = "matched_from_$filename";
 find_matching_reviews($filename, $out_filename);
