@@ -12,11 +12,28 @@ require_once 'json_functions.php';
 require_once 'data_functions.php';
 
 
+define('SEARCH_INDEX', 'Books');
+define('RESPONSE_GROUP', 'ItemAttributes');
+
 function match_single_book($url, $title, $author){
-	$amazonSearchURL = amazon_get_signed_url($title, $author);
-	$isbn = extract_isbn($amazonSearchURL);
-	if (!$isbn) return false;		//	If we're unable to extract the isbn given the title/author,
-									//	there could be either an error in accessing the api or that the title/author combination simply doesn't yield any results.
+	// $amazonSearchURL = amazon_get_signed_url($title, $author);
+	// $isbn = extract_isbn($amazonSearchURL);
+	// if (!$isbn) return false;		//	If we're unable to extract the isbn given the title/author,
+	// 								//	there could be either an error in accessing the api or that the title/author combination simply doesn't yield any results.
+	$params = array(
+	'Title'=>$title,
+	'Author'=>$author
+	);
+
+	$lookupObject = new AmazonSearch(SEARCH_INDEX, $params, RESPONSE_GROUP);
+	$attempt = $lookupObject->execute();
+	if ($attempt = false){
+		print "Problem ~ Auth: $author\tTitle: $title\n";
+		return false;	//	If the search could not be performed, the object returns false.
+	}
+
+	$firstMatchedItem = $lookupObject->get_item_data(1);
+	$isbn = $firstMatchedItem['attributes']['ISBN'];
 
 	$toEncode = array(array("web_url", $url), array("Title", $title), array("Author", $author), array("ISBN", $isbn) );
 	$encodedJSONStr = encodeInJSON($toEncode);
@@ -51,7 +68,10 @@ function match_all_books($filename, $outfile = NULL){
 			$numberProcessed++;
 
 			$newLine = match_single_book($url, $title, $author);
-			if (!$newLine) continue;	
+			if (!$newLine){
+				print "*\t";
+				continue;
+			}	
 			
 			fwrite($outHandle, $prefix);
 			fwrite($outHandle, $newLine);
@@ -68,20 +88,27 @@ function match_all_books($filename, $outfile = NULL){
 
 }
 
-//print amazon_get_signed_url("Return of the King", "Tolkien") . "\n\n";
-//match_all_books("glass_matches.txt", "isbn_matches.txt");
 
-$index = 'Books';
-$params = array(
-	'Title'=>'Inferno',
-	'Author'=>'Dan Brown'
-	);
-$resGroup = 'ItemAttributes';
-$obj = new AmazonSearch($index, $params, $resGroup);
-print $obj->get_query_url() . "\n\n";
+//	MAIN FUNCTIONALITY
 
-$obj->execute();
-print "The Amazon Link:\t" . $obj->get_amazon_link() . "\tNumber Of Results:\t" . $obj->get_number_results() . "\n\n";
+match_all_books("glass_matches.txt", "isbn_matches.txt");
 
+
+
+// //	Specify what you're doing the amazon search for
+// $index = 'Books';
+// $params = array(
+// 	'Title'=>'Inferno',
+// 	'Author'=>'Dan Brown'
+// 	);
+// $resGroup = 'ItemAttributes';
+
+// //	Instantiate an AmazonSearch Object
+// $obj = new AmazonSearch($index, $params, $resGroup);
+// print $obj->get_query_url() . "\n\n";
+
+// $obj->execute();
+// $firstItem = $obj->get_item_data(1);
+// var_export($firstItem);
 
 ?>

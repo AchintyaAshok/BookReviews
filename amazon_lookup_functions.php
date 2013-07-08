@@ -13,19 +13,24 @@ class AmazonItem{
 	public $asin;			//	Amazon's Identification Number for Items
 	public $itemURL;		//	The URL for the Item's Detail Page
 	public $attributes = array();		//	Any Attributes about the Item, ISBN, Title, Author, etc.
-	public $matchNumber;	//	The Match Number is a reference to the relavency of the item in terms of the request. For example,
-							//	-- if the item was the first result on the page, the matchNumber will be 1. The second will be 2, etc.
-
-	public function __construct($asin, $url, $matchNumber, $attr = NULL){
+	
+	public function __construct($asin, $url, $attr = NULL){
 		$this->asin = $asin;
 		$this->itemURL = $url;
-		$this->matchNumber = $matchNumber;
 
 		if(!$attr) return;
 		//	The attributes, given as key/value pairs, is an optional argument for the constructor, if any were specified we take care of it.
 		foreach($attr as $key=>$value){
+			if (strlen($value)==0) continue;
 			$this->attributes[$key] = $value;
 		}
+	}
+
+	public function get_item_information(){
+		$toReturn['asin'] = $this->asin;
+		$toReturn['url'] = $this->itemURL;
+		$toReturn['attributes'] = $this->attributes;
+		return $toReturn;
 	}
 }
 
@@ -78,7 +83,8 @@ class AmazonSearch{
 		//	Curl the url and pull the xml from the page
 		$resultData = $this->curl_url();
 		if (!$resultData){
-			print "Something went wrong... \n\t- Check your Search Index and Parameters to make sure they're valid.\n\t- Check your Response Group.\n";
+			//print "Something went wrong... \n\t- Check your Search Index and Parameters to make sure they're valid.\n\t- Check your Response Group.\n";
+			return false;
 		}
 		$this->executed=true;					//	This indicates that the url request was executed and we can succesfully get information from the xml
 
@@ -94,28 +100,86 @@ class AmazonSearch{
 		$this->amazonLink = $ItemsData->MoreSearchResultsUrl;
 
 		foreach($ItemsData->Item as $elem){
-			$asin = $elem->ASIN;				//	Amazon's Standard Identification Number for a result
-			$detailURL = $elem->DetailPageURL;	//	The url linking to the Item's Detail Page
-			
-			//	We skip the ItemLinks, because these are links for adding to your cart, Tell A Friend, etc. 
-				
-			$responseGroup = $this->responseGroup;	
-			$infoToRetrive = $elem->$responseGroup;	//	The Response Group, as specified on instantiation, relates in XML to the data we get back
-			var_export($infoToRetrive);
-			return;
+			$asin 			= (string)$elem->ASIN;				//	Amazon's Standard Identification Number for a result
+			$detailURL 		= (string)$elem->DetailPageURL;		//	The url linking to the Item's Detail Page
+			$responseGroup 	= (string)$this->responseGroup;	
+			$infoToRetrive 	= (string)$elem->$responseGroup;	//	The Response Group, as specified on instantiation, relates in XML to the data we get back
 
+			//	Process the Item's Attributes 
 			$data = array();
-			foreach($infoToRetrieve->children() as $child=>$value){
-				$data[$child] = $value;
+			foreach($elem->ItemAttributes->children() as $child){
+				$data[$child->getName()] = (string)$child;
 			}
 
-			var_export($data);
+			//	Add each new single Item (with its attributes intact), to this object's resultItems array
+			$constructedItem = new AmazonItem($asin, $detailURL, $data);
+			array_push($this->resultItems, $constructedItem);
 		}
 
+		return true;	//	indicates success
+	}
+
+	private function create_array_from_simplexml($xml){
+		return NULL;
+		// SECOND ATTEMPT
+		// if (count($xml) == 0){
+		// 	print "No Children.\n";
+		// 	//	If this xmlelement has no children, we return the value of the object.
+		// 	return ($xml);
+		// 	$key = $xml->getName();
+		// 	$value = 
+		// }
+
+		// $toReturn = array();
+
+		// foreach($xml->children() as $element){
+		// 	//$value = $this->create_array_from_simplexml($element);
+		// 	$value = $this->create_array_from_simplexml($element);
+		// 	if (count($value) == 1){
+
+		// 	}
+		// 	$toReturn[$element->getName()] = $value;
+		// }
+
+		// return $toReturn;
+
+		// FIRST ATTEMPT:
+		// $elems = $xml->children();
+		// if (count($elems)==0){
+		// 	print "No Children\n";
+		// //	If there is only one element, we return an array with the key/value binding, we have no way of knowing
+		// //	the name of the key so we must use this foreach construct.
+		// 	$arrayToReturn = array();
+		// 	$arrayToReturn[$xml->getName()] = 
+		// 	return $arrayToReturn;
+		// }
+
+		// $arrayToReturn = array();
+		// foreach ($elems as $parent=>$child){
+		// 	//var_export($parent);
+		// 	$value = $this->create_array_from_simplexml($child);
+		// 	if ($value != false){
+		// 		$arrayToReturn[$parent] = $value;
+
+		// 	}
+		// 	else{
+		// 		print "It was false\n";
+		// 		$arrayToReturn[$parent] = '$child';
+		// 	}
+		// }
+		// return $arrayToReturn;
 
 	}
 
-
+	/*	This method returns the data about an item. The result number parameter is in reference to the 
+		item's relavence in terms of the search. For example, if $result_number was '1', the function would
+		return the data about the first item that was processed from the search. If a given item number 
+		exceeds the number of results this object holds, the method will return false.	*/
+	public function get_item_data($resultNumber){
+		$numItems = count($this->resultItems);
+		if ($resultNumber > $numItems) return false;
+		return ($this->resultItems[$resultNumber-1]->get_item_information());
+	}
 
 	public function add_parameter($newParam){
 		foreach($newParam as $key=>$value){
