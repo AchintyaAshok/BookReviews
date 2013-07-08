@@ -82,7 +82,7 @@ class AmazonSearch{
 		
 		//	Curl the url and pull the xml from the page
 		$resultData = $this->curl_url();
-		if (!$resultData){
+		if ($resultData == false){
 			//print "Something went wrong... \n\t- Check your Search Index and Parameters to make sure they're valid.\n\t- Check your Response Group.\n";
 			return false;
 		}
@@ -96,6 +96,10 @@ class AmazonSearch{
 												//	-- how many pages there are, the link on amazon for the search results, and finally
 												//	-- it encapsulates item objects which represent each item element.
 		$this->numResults = $ItemsData->TotalResults;
+		if ($this->numResults == 0){
+			print "AmazonItem::execute()::No Results Found\n";
+			return false;	//	If we do not get any results, the execution did not yield anything.
+		}
 		$this->numPages = $ItemsData->TotalPages;
 		$this->amazonLink = $ItemsData->MoreSearchResultsUrl;
 
@@ -207,7 +211,13 @@ class AmazonSearch{
 		return -1;				//	-1 indicates the the object has yet to be executed.
 	}
 
-	private function construct_search_url(){
+	public function get_api_url(){
+		if (!$this->url){
+			$this->construct_search_url();
+		}
+		return $this->url;
+	}
+
 	/*	
 	*	This function constucts the url for the api call to amazon's itemsearch. This happens by analyzing the itemsearch parameters
 	*	, the search Index and the ReponseGroup specified upon instantiation and afterwards. The function sets the member variable, $url,
@@ -216,6 +226,8 @@ class AmazonSearch{
 	*	Note that this construction function is a derivation of the amazon_get_signed_url function as specified on:
 	*	http://www.internetammo.com/how-to-connect-to-get-amazon-products-from-the-amazon-api-with-php-and-curl/
 	*/
+	private function construct_search_url(){
+
 		$base_url = "http://ecs.amazonaws.com/onca/xml";
 		$urlParameters = array(
 			'AWSAccessKeyId' => $this->aws_access_key,
@@ -261,8 +273,10 @@ class AmazonSearch{
 	}
 
 	private function curl_url(){
-		if (!$this->url) return false;	//	If the URL has not been configured, we cannot curl anything
-
+		if (!$this->url){
+			print "curl_url::url not set\n";
+			return false;	//	If the URL has not been configured, we cannot curl anything
+		}
 		$curl_handle = curl_init();
 		// Configure the curl_handle
 		curl_setopt($curl_handle,CURLOPT_URL, $this->url);
@@ -274,7 +288,10 @@ class AmazonSearch{
 
 		//SANITY CHECK
 		$http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
-		if ($http_code != 200) return false;	//	Something went wrong, we could not retrieve results
+		if ($http_code != 200){
+			print "curl_url::http error - $http_code\n";
+			return false;	//	Something went wrong, we could not retrieve results
+		}
 
 		return $data;
 	}

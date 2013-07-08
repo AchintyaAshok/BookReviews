@@ -27,19 +27,26 @@ function match_single_book($url, $title, $author){
 
 	$lookupObject = new AmazonSearch(SEARCH_INDEX, $params, RESPONSE_GROUP);
 	$attempt = $lookupObject->execute();
-	if ($attempt = false){
-		print "Problem ~ Auth: $author\tTitle: $title\n";
+	// TESTING
+	//print "Looking UP:\t" . $lookupObject->get_api_url() . "\n";
+
+	if ($attempt == false){
+		//print "\nProblem ~ Auth: $author\tTitle: $title\n";
+		//print $lookupObject->get_api_url() . "\n--------------------";
 		return false;	//	If the search could not be performed, the object returns false.
 	}
 
 	$firstMatchedItem = $lookupObject->get_item_data(1);
 	$isbn = $firstMatchedItem['attributes']['ISBN'];
+	if (strlen($isbn)==0){
+		print "match_single_book::ISBN Field is Empty\n";
+		return false;
+	}
 
 	$toEncode = array(array("web_url", $url), array("Title", $title), array("Author", $author), array("ISBN", $isbn) );
 	$encodedJSONStr = encodeInJSON($toEncode);
 	return $encodedJSONStr;
 }
-
 
 function match_all_books($filename, $outfile = NULL){
 
@@ -54,22 +61,26 @@ function match_all_books($filename, $outfile = NULL){
 	$prefix = "";
 
 	foreach($lineArray as $line){
+		//print "processing line...\n";
 		$data = parse_json_get_data($line);
-		if(!$data)	continue;	//	This means the function was unable to extract info for this line, so we continue
+		if(!$data){
+			//print "Did not decode correctly...\n";
+			continue;	//	This means the function was unable to extract info for this line, so we continue
+		}
 
-		// var_export($data);
-		// return;
-
-		$url = $data['url'];
-		$title = $data['title'];
-		$author = $data['author'];
+		// $url = $data['url'];
+		// $title = $data['title'];
+		// $author = $data['author'];
+		$url = $data['web_url'];
+		$title = $data['Title'];
+		$author = $data['Author'];
 
 		if (strlen($title)>0 && strlen($author)>0){
 			$numberProcessed++;
-
 			$newLine = match_single_book($url, $title, $author);
 			if (!$newLine){
-				print "*\t";
+				//print "--No Matches Found--$title/$author\n";
+				usleep(1000000);
 				continue;
 			}	
 			
@@ -78,6 +89,7 @@ function match_all_books($filename, $outfile = NULL){
 			$numberMatched++;
 		}
 		$prefix = ",\n";
+		usleep(1000000);
 	}
 
 	fwrite($outHandle, "]");
@@ -85,30 +97,16 @@ function match_all_books($filename, $outfile = NULL){
 	$timeEnd = microtime(true);
 	$elapsed = $timeEnd - $timeStart;
 	print "\nTotal Number Processed: $numberProcessed\tMatched:\t$numberMatched\nTime Elapsed: $elapsed\n\n";
-
 }
 
 
 //	MAIN FUNCTIONALITY
+$readFile = $argv[1];
+$outFile = $argv[2];
+//print "READ FILE:\t$readFile\nOUTPUT FILE:\t$outFile\n";
+//match_all_books($readFile, $outFile);
+match_all_books("glass_matches_revised.txt", "isbn_matches2.txt");
 
-match_all_books("glass_matches.txt", "isbn_matches.txt");
 
-
-
-// //	Specify what you're doing the amazon search for
-// $index = 'Books';
-// $params = array(
-// 	'Title'=>'Inferno',
-// 	'Author'=>'Dan Brown'
-// 	);
-// $resGroup = 'ItemAttributes';
-
-// //	Instantiate an AmazonSearch Object
-// $obj = new AmazonSearch($index, $params, $resGroup);
-// print $obj->get_query_url() . "\n\n";
-
-// $obj->execute();
-// $firstItem = $obj->get_item_data(1);
-// var_export($firstItem);
-
+//match_all_books("glass_matches.txt", "isbn_matches.txt");
 ?>
