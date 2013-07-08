@@ -1,7 +1,12 @@
 <?php
-
 /*
-*	Original Code authored on http://www.internetammo.com/how-to-connect-to-get-amazon-products-from-the-amazon-api-with-php-and-curl/
+	Author:			Achintya Ashok
+	Date-Created:	07/03/13
+
+	Purpose:		This file contains two classes that can be used to facilitate an Amazon ItemSearch.
+					The AmazonSearch Class is used to instantiate an amazon search and will contain returned
+					search results encapsulated in AmazonItem Objects. Follow the AmazonSearch Documentation
+					to retrieve result information.
 */
 
 define('AWS_ACCESS_KEY_ID', 'AKIAIRSGIQGEIMJKFU7Q'); 
@@ -40,15 +45,15 @@ class AmazonSearch{
 //	Member Variables
 	//	Information for Query:
 	private $aws_access_key = AWS_ACCESS_KEY_ID;				//	The Amazon Affiliate Key required for the Amazon Lookup API
-	private $aws_secret_access_key = AWS_SECRET_ACCESS_KEY;	//	This, along with our query gets hashed as a request signature
-	private $associate_tag = AMAZON_ASSOC_TAG;
+	private $aws_secret_access_key = AWS_SECRET_ACCESS_KEY;		//	This, along with our query gets hashed as a request signature
+	private $associate_tag = AMAZON_ASSOC_TAG;					//	This association tag tells amazon who this api call was made from (eg. The New York Times)
 
 	private $searchIndex;							//	A Specific Category of items (documented on Amazon), which the query is restricted to
 	private $params = array();						//	A collection of search parameters to further specify the query
 													//	-- Each Search Index has a set of parameters that can be used with it, so
 													//	-- be careful to have correct combinations.
 	private $responseGroup;
-	private $itemPage = 1;									//	Each lookup can have results that span multiple pages, this parameter specifies
+	private $itemPage = 1;							//	Each lookup can have results that span multiple pages, this parameter specifies
 													//	-- which page gets returned.
 	private $url = NULL;
 	private $executed = false;
@@ -61,7 +66,10 @@ class AmazonSearch{
 										//	-- The key is the match number (in terms of relavency, such as the first item returned by the api),
 										//	-- and the value is an AmazonItem Object.
 
-	
+	/*	Constructor for the AmazonSearch Class. The constructor expects 3 parameters: a search index,
+		an array of parameters (there must be at least one key/value entry), and a Response Group for 
+		results that are wished. The parameters must correspond correctly with the given search index.
+		Correct Search Index/Parameter combinations can be found on Amazon's ItemSearch Page.		*/
 	public function __construct($search_index, $parameters, $resGroup){
 		$this->searchIndex = $search_index;
 		
@@ -77,6 +85,9 @@ class AmazonSearch{
 		$this->construct_search_url();				
 	}
 
+	/*	The execute() method, is the quintessential method for this class, it constructs the api url, curls the 
+		amazon response, and creates AmazonItem elements that it stores in a result array. If anything goes wrong
+		in the aforementioned steps, it will return false and print out an error message.	*/
 	public function execute(){
 		if (!$this->url) $this->construct_search_url();
 		
@@ -123,6 +134,7 @@ class AmazonSearch{
 		return true;	//	indicates success
 	}
 
+	/*	USELESS FUNCTION FOR NOW 	*/
 	private function create_array_from_simplexml($xml){
 		return NULL;
 		// SECOND ATTEMPT
@@ -172,19 +184,29 @@ class AmazonSearch{
 		// 	}
 		// }
 		// return $arrayToReturn;
-
 	}
 
-	/*	This method returns the data about an item. The result number parameter is in reference to the 
+	/*	IMPORTANT:	This method returns the data about an item. The result number parameter is in reference to the 
 		item's relavence in terms of the search. For example, if $result_number was '1', the function would
 		return the data about the first item that was processed from the search. If a given item number 
 		exceeds the number of results this object holds, the method will return false.	*/
 	public function get_item_data($resultNumber){
+		if (!$this->executed) return false;		//	If the object was not executed, it returns false.
+
 		$numItems = count($this->resultItems);
 		if ($resultNumber > $numItems) return false;
 		return ($this->resultItems[$resultNumber-1]->get_item_information());
 	}
 
+	/*	This returns an array of AmazonItem Objects each containing, in relavancy order (from most relavant to least),
+		item information for a given result. If the AmazonSearch was not executed, the method will return false.	*/
+	public function get_all_items(){
+		if (!$this->executed)	return false;
+		return $resultItems;
+	}
+
+	/*	Method to add ItemSearch parameters to your query. The parameters included must correspond correctly to
+		the search index that was given upon instantiation.	*/
 	public function add_parameter($newParam){
 		foreach($newParam as $key=>$value){
 			$this->$params[$key] = $value;
@@ -192,11 +214,16 @@ class AmazonSearch{
 		$this->url = NULL;	//	The previously set url does not reflect the changes, by setting it to null, we indicate to the object that it needs to recalculate the url.
 	} 
 
-	public function get_query_url(){
+	/*	Method that returns the api query url that is called to retrieve information from Amazon's API.	*/
+	public function get_api_url(){
 		$this->construct_search_url();
 		return $this->url;
 	}
 
+	/*	This is Amazon's link for the search query you are trying to perform. This link is not an API Call but rather
+		a link to the search results page on Amazon's Website. If the object has not been executed(), this method
+		will return false indicating that this must be done first (this ensures that any problems with execution
+		are dealt with prior to getting this link).		*/
 	public function get_amazon_link(){
 		if($this->executed){
 			return $this->amazonLink;
@@ -206,26 +233,19 @@ class AmazonSearch{
 		return false;
 	}
 
+	/*	Returns the total number of results that Amazon's Search API found given the query. If the object was not
+		executed(), the function will return -1.	*/
 	public function get_number_results(){
 		if ($this->executed)	return $this->numResults;
 		return -1;				//	-1 indicates the the object has yet to be executed.
 	}
 
-	public function get_api_url(){
-		if (!$this->url){
-			$this->construct_search_url();
-		}
-		return $this->url;
-	}
+	/*	This function constucts the url for the api call to amazon's itemsearch. This happens by analyzing the itemsearch parameters,
+		the search Index and the ReponseGroup specified upon instantiation and afterwards. The function sets the member variable, $url,
+		to the generated url.
 
-	/*	
-	*	This function constucts the url for the api call to amazon's itemsearch. This happens by analyzing the itemsearch parameters
-	*	, the search Index and the ReponseGroup specified upon instantiation and afterwards. The function sets the member variable, $url,
-	*	to the generated url.
-	*
-	*	Note that this construction function is a derivation of the amazon_get_signed_url function as specified on:
-	*	http://www.internetammo.com/how-to-connect-to-get-amazon-products-from-the-amazon-api-with-php-and-curl/
-	*/
+		Note that this construction function is a derivation of the amazon_get_signed_url function as specified on:
+		http://www.internetammo.com/how-to-connect-to-get-amazon-products-from-the-amazon-api-with-php-and-curl		*/
 	private function construct_search_url(){
 
 		$base_url = "http://ecs.amazonaws.com/onca/xml";
@@ -272,6 +292,9 @@ class AmazonSearch{
 		$this->url = $base_url . '?' . $urlString . "&Signature=" . $signature;
 	}
 
+	/*	This method curls the results given from the auto-generated api-url that the object creates given the search parameters.
+		If the curl did not execute correctly (did not recieve 200:OK Http Response), it will return false indicating an error.
+		If the URL was not configured explictly by calling construct_search_url(), it will also return false. */
 	private function curl_url(){
 		if (!$this->url){
 			print "curl_url::url not set\n";
@@ -395,15 +418,4 @@ function extract_isbn($url){
 	if (!isset($isbn)) return false;
 	return $isbn;
 }
-
-
-
-// $url = amazon_get_signed_url('Inferno', 'Dan Brown');
-// print "Amazon ItemSearch URL:\t" . $url . "\n\n";
-// print "Found ISBN:\t" . extract_isbn($url) . "\n\n";
-
-
-
-
-
 

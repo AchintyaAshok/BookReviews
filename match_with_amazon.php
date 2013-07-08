@@ -16,28 +16,21 @@ define('SEARCH_INDEX', 'Books');
 define('RESPONSE_GROUP', 'ItemAttributes');
 
 function match_single_book($url, $title, $author){
-	// $amazonSearchURL = amazon_get_signed_url($title, $author);
-	// $isbn = extract_isbn($amazonSearchURL);
-	// if (!$isbn) return false;		//	If we're unable to extract the isbn given the title/author,
-	// 								//	there could be either an error in accessing the api or that the title/author combination simply doesn't yield any results.
+	// ItemSearch Parameters we are including to whittle down our search
 	$params = array(
 	'Title'=>$title,
 	'Author'=>$author
 	);
 
-	$lookupObject = new AmazonSearch(SEARCH_INDEX, $params, RESPONSE_GROUP);
-	$attempt = $lookupObject->execute();
-	// TESTING
-	//print "Looking UP:\t" . $lookupObject->get_api_url() . "\n";
+	$lookupObject = new AmazonSearch(SEARCH_INDEX, $params, RESPONSE_GROUP);	//	Create a new AmazonSearch
+	$attempt = $lookupObject->execute();										//	Execute the object to make the api call and pull results
 
 	if ($attempt == false){
-		//print "\nProblem ~ Auth: $author\tTitle: $title\n";
-		//print $lookupObject->get_api_url() . "\n--------------------";
 		return false;	//	If the search could not be performed, the object returns false.
 	}
 
-	$firstMatchedItem = $lookupObject->get_item_data(1);
-	$isbn = $firstMatchedItem['attributes']['ISBN'];
+	$firstMatchedItem = $lookupObject->get_item_data(1);		//	Returns an associative array of information about the first results amazon returned
+	$isbn = $firstMatchedItem['attributes']['ISBN'];			//	Get the ISBN
 	if (strlen($isbn)==0){
 		print "match_single_book::ISBN Field is Empty\n";
 		return false;
@@ -61,25 +54,22 @@ function match_all_books($filename, $outfile = NULL){
 	$prefix = "";
 
 	foreach($lineArray as $line){
-		//print "processing line...\n";
 		$data = parse_json_get_data($line);
 		if(!$data){
-			//print "Did not decode correctly...\n";
 			continue;	//	This means the function was unable to extract info for this line, so we continue
 		}
 
-		// $url = $data['url'];
-		// $title = $data['title'];
-		// $author = $data['author'];
-		$url = $data['web_url'];
-		$title = $data['Title'];
-		$author = $data['Author'];
+		$url = $data['url'];
+		$title = $data['title'];
+		$author = $data['author'];
+		// $url = $data['web_url'];
+		// $title = $data['Title'];
+		// $author = $data['Author'];
 
 		if (strlen($title)>0 && strlen($author)>0){
 			$numberProcessed++;
 			$newLine = match_single_book($url, $title, $author);
 			if (!$newLine){
-				//print "--No Matches Found--$title/$author\n";
 				usleep(1000000);
 				continue;
 			}	
