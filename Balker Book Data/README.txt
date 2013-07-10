@@ -1,0 +1,1 @@
+The balker data is a collection of titles/author/isbns of all books written since a given date. We iterated through every entry in this data, using the title and author as search parameters in the NYTimes Search API to find if any book reviews could be "matched". 

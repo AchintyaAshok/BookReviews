@@ -1,1 +1,0 @@
-{"title":"Steve Jobs", "author":"Isaacson, Walter", "isbns":"123123113"}
