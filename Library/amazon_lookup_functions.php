@@ -40,10 +40,19 @@ class AmazonItem{
 }
 
 
+
+class SearchType{
+// Enumerated Type to explicity choose what type of Amazon Search you want
+	const ITEM_SEARCH = true;
+	const ITEM_LOOKUP = false;
+}
+
+
 class AmazonSearch{
 
 //	Member Variables
 	//	Information for Query:
+	private $itemSearch;											//	You can either do an Amazon ItemLookup or Amazon ItemSearch
 	private $aws_access_key = AWS_ACCESS_KEY_ID;				//	The Amazon Affiliate Key required for the Amazon Lookup API
 	private $aws_secret_access_key = AWS_SECRET_ACCESS_KEY;		//	This, along with our query gets hashed as a request signature
 	private $associate_tag = AMAZON_ASSOC_TAG;					//	This association tag tells amazon who this api call was made from (eg. The New York Times)
@@ -73,15 +82,16 @@ class AmazonSearch{
 		an array of parameters (there must be at least one key/value entry), and a Response Group for 
 		results that are wished. The parameters must correspond correctly with the given search index.
 		Correct Search Index/Parameter combinations can be found on Amazon's ItemSearch Page.		*/
-	public function __construct($search_index, $parameters, $resGroup){
+	public function __construct($search_index, $parameters, $resGroup, $searchType = true){
 		$this->searchIndex = $search_index;
+		$this->itemSearch = $searchType;
 		foreach($parameters as $key=>$value){
 			$this->params[$key] = $value;	//	Add any given parameters to the itemsearch parameters
 		}
 		//	The Response Group of information we want to get back
 		$this->responseGroup = $resGroup;
 		//	Construct our Search Call for when the object's execute() function gets called.
-		$this->construct_search_url();				
+		$this->construct_search_url();	 			
 	}
 
 
@@ -101,14 +111,16 @@ class AmazonSearch{
 		}
 		$this->executed=true;					//	This indicates that the url request was executed and we can succesfully get information from the xml
 
-		//var_export($resultData);
 		$resultObject = new SimpleXMLElement($resultData);
-		//var_export($resultObject);
-
 		$ItemsData = $resultObject->Items;		//	This element is the encapsulating xml that contains data about how many items there are,
 												//	-- how many pages there are, the link on amazon for the search results, and finally
 												//	-- it encapsulates item objects which represent each item element.
-		$this->numResults = $ItemsData->TotalResults;
+		if ($this->itemSearch){
+			$this->numResults = $ItemsData->TotalResults;
+		}
+		else{
+			$this->numResults = $ItemsData->count();
+		}
 		if ($this->numResults == 0){
 			print "AmazonItem::execute()::No Results Found\n";
 			return false;	//	If we do not get any results, the execution did not yield anything.
@@ -207,16 +219,23 @@ class AmazonSearch{
 			'AWSAccessKeyId' => $this->aws_access_key,
 			'AssociateTag' => $this->associate_tag,
 			'Version' => "2010-11-01",
-			'Operation' => "ItemSearch",
 			'Service' => "AWSECommerceService",
 			'SearchIndex' => $this->searchIndex,
 			'ResponseGroup' => $this->responseGroup,
 			'ItemPage' => $this->itemPage,
 		);
+		
+		if ($this->itemSearch){
+			$urlParameters['Operation'] = "ItemSearch";
+		}
+		else{
+			$urlParameters['Operation'] = "ItemLookup";	
+		}
 
 		foreach($this->params as $key=>$value){
 		//	Include all our ItemSearch parameters
 			$urlParameters[$key] = $value;
+			//print "Params: $key => $value\n";
 		}
 
 		if(empty($urlParameters['AssociateTag'])) { 
@@ -271,58 +290,6 @@ class AmazonSearch{
 		}
 
 		return $data;
-	}
-
-		/*	USELESS FUNCTION FOR NOW 	*/
-	private function create_array_from_simplexml($xml){
-		return NULL;
-		// SECOND ATTEMPT
-		// if (count($xml) == 0){
-		// 	print "No Children.\n";
-		// 	//	If this xmlelement has no children, we return the value of the object.
-		// 	return ($xml);
-		// 	$key = $xml->getName();
-		// 	$value = 
-		// }
-
-		// $toReturn = array();
-
-		// foreach($xml->children() as $element){
-		// 	//$value = $this->create_array_from_simplexml($element);
-		// 	$value = $this->create_array_from_simplexml($element);
-		// 	if (count($value) == 1){
-
-		// 	}
-		// 	$toReturn[$element->getName()] = $value;
-		// }
-
-		// return $toReturn;
-
-		// FIRST ATTEMPT:
-		// $elems = $xml->children();
-		// if (count($elems)==0){
-		// 	print "No Children\n";
-		// //	If there is only one element, we return an array with the key/value binding, we have no way of knowing
-		// //	the name of the key so we must use this foreach construct.
-		// 	$arrayToReturn = array();
-		// 	$arrayToReturn[$xml->getName()] = 
-		// 	return $arrayToReturn;
-		// }
-
-		// $arrayToReturn = array();
-		// foreach ($elems as $parent=>$child){
-		// 	//var_export($parent);
-		// 	$value = $this->create_array_from_simplexml($child);
-		// 	if ($value != false){
-		// 		$arrayToReturn[$parent] = $value;
-
-		// 	}
-		// 	else{
-		// 		print "It was false\n";
-		// 		$arrayToReturn[$parent] = '$child';
-		// 	}
-		// }
-		// return $arrayToReturn;
 	}
 
 }
