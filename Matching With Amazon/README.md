@@ -1,1 +1,10 @@
-This folder consists of code that I used to retrieve ISBN, author & title information about books from Amazon's Web Services. Here, I employ an OOP approach to facilitate getting information from Amazon, allowing the caller to choose what kind of data they want (they are not restricted to book reviews). The AmazonSearch Class can be used to get just about anything from Amazon as long as you provide valid credentials and search parameters.
+This folder consists of 3 things I had to do to facilitate the addition of book reviews to NYTimes databases.
+
+a) Lead Paragraph Reviews:
+      This folder has the script that extracted Title & author information from the NYTimes databases using the lead paragraph entries generated in JSON format when a call is made to the company's ADDIndex servers for Book Reviews.
+      
+b) Glass Reviews:
+      In addition to the ADD Index, Glass is another version of storage that the NYTimes adopted that better categorizes article information for the Times. The script present in this folder gets book review information that was returned by the Glass API.
+      
+c) Cleanup:
+      This folder consists of scripts that were primarily used to "clean" the extracted information that was received from the Glass and Lead Paragraph Reviews API. They account for many of the edge cases that arise from non-optimal indexing of information that was performed when the Times moved into digitally storing their Book Reviews. 
