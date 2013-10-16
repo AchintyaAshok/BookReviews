@@ -9,9 +9,9 @@
 					to retrieve result information.
 */
 
-define('AWS_ACCESS_KEY_ID', 'AKIAIRSGIQGEIMJKFU7Q'); 
-define('AWS_SECRET_ACCESS_KEY', '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'); 		
-define('AMAZON_ASSOC_TAG', 'thenewyorktim-20'); 			//	Tag that lets Amazon know from which of their affiliates they were redirected to to purchase a product
+define('AWS_ACCESS_KEY_ID', 'XXXXXX'); 
+define('AWS_SECRET_ACCESS_KEY', 'XXXXXX'); 		
+define('AMAZON_ASSOC_TAG', 'XXXXXX'); 			//	Tag that lets Amazon know from which of their affiliates they were redirected to to purchase a product
 
 
 class AmazonItem{
